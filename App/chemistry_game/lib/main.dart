@@ -25,26 +25,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-class Wrapper extends StatefulWidget {
-  @override
-  _WrapperState createState() => _WrapperState();
-}
-
-class _WrapperState extends State<Wrapper> {
-  @override
-  Widget build(BuildContext context) {
-
-    final user = Provider.of<User>(context);
-
-    print('First user - $user');
-
-    if(user == null) {
-      return Authenticate();
-    }
-    else {
-      print('Second user - $user');
-      return HomeScreen();
-    }
-  }
-}
