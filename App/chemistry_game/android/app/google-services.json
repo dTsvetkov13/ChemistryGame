@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "216497172570",
+    "firebase_url": "https://chemistrygame-cd3a6.firebaseio.com",
+    "project_id": "chemistrygame-cd3a6",
+    "storage_bucket": "chemistrygame-cd3a6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:216497172570:android:da7f2e74acfca31e6ca863",
+        "android_client_info": {
+          "package_name": "com.chemistry_game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "216497172570-dj02uldg5de086ms57i7hadeqmtk0ian.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQHwhG0iMTfjVFvVRtFKBm_mD4pYdCF8Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "216497172570-dj02uldg5de086ms57i7hadeqmtk0ian.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
