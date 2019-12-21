@@ -14,6 +14,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
 
     SystemChrome.setEnabledSystemUIOverlays([]);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
 
     return StreamProvider<User>.value(
       value: AuthService().user,

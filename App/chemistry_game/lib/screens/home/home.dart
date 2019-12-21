@@ -44,6 +44,11 @@ class HomeScreenState extends State<HomeScreen> {
 
     SystemChrome.setEnabledSystemUIOverlays([]);
 
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]); //Landscape mode
+
     User user = Provider.of<User>(context);
     print("Third user");
     print(user.uid);
