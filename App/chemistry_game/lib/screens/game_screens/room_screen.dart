@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart';
 
 class BuildRoomScreen extends StatefulWidget {
 
@@ -17,9 +21,14 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   @override
   Widget build(BuildContext context) {
 
+    SystemChrome.setEnabledSystemUIOverlays([]);
+
     final mediaQueryData = MediaQuery.of(context);
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
+    /*final HttpsCallable callable = CloudFunctions.instance.getHttpsCallable(
+      functionName: 'readFromDb',
+    );*/
 
     return Scaffold(
       body: Column(
@@ -34,7 +43,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                   ),
                   child: Icon(Icons.arrow_downward, color: Colors.blue),
-                  onPressed: () {},
+                  onPressed: () {
+                    /*dynamic resp = callable.call();
+                    print(resp.toString());
+                    var json = jsonDecode(resp.;
+                    print(json.toString());*/
+                  },
                 ),
               ),
               Container(

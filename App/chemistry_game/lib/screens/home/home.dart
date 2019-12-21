@@ -6,6 +6,7 @@ import 'package:chemistry_game/screens/home/profile_screen.dart';
 import 'package:chemistry_game/screens/home/ranking_screen.dart';
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/models/User.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:chemistry_game/services/database.dart';
 import 'package:chemistry_game/screens/home/main_screen.dart';
@@ -40,6 +41,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    SystemChrome.setEnabledSystemUIOverlays([]);
 
     User user = Provider.of<User>(context);
     print("Third user");
