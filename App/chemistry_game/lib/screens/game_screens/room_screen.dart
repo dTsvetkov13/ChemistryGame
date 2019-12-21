@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
+import 'package:chemistry_game/models/element_card.dart';
 
 class BuildRoomScreen extends StatefulWidget {
 
@@ -29,6 +30,23 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     /*final HttpsCallable callable = CloudFunctions.instance.getHttpsCallable(
       functionName: 'readFromDb',
     );*/
+
+    ListView getElementCards() {
+      return ListView(
+        scrollDirection: Axis.horizontal,
+        children: <Widget>[
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+          ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
+
+
+        ],
+      );
+    }
 
     return Scaffold(
       body: Row(
@@ -115,11 +133,14 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                       color: Colors.cyanAccent,
                     ),
                     //Last Card
-                    Container(
+                    /*Container(
                       height: mediaQueryHeight * 0.4,
                       width: mediaQueryWidth * 0.15,
                       color: Colors.purpleAccent,
-                    ),
+                    ),*/
+
+                    ElementCard(name: "H2", group: "3A", period: 1).draw(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
+
                     //Build Menu
                     Container(
                       height: mediaQueryHeight * 0.4,
@@ -134,12 +155,51 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                   width: mediaQueryWidth * 0.6,
                 ),
 
+
+
+                /*SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Expanded(
+                      child: ListView(
+                          children: <Widget>[
+                            Container(
+                              height: mediaQueryHeight * 0.2,
+                              width: mediaQueryWidth * 0.3,
+                              color: Colors.cyanAccent,
+                            ),
+                            Container(
+                              height: mediaQueryHeight * 0.2,
+                              width: mediaQueryWidth * 0.3,
+                            ),
+                            Container(
+                              height: mediaQueryHeight * 0.2,
+                              width: mediaQueryWidth * 0.3,
+                              color: Colors.cyanAccent,
+                            ),Container(
+                              height: mediaQueryHeight * 0.2,
+                              width: mediaQueryWidth * 0.3,
+                            ),Container(
+                              height: mediaQueryHeight * 0.2,
+                              width: mediaQueryWidth * 0.3,
+                              color: Colors.cyanAccent,
+                            ),
+
+
+                          ]
+                      ),
+                    )
+                )*/
                 Container(
+                  height: mediaQueryHeight * 0.2,
+                  width: mediaQueryWidth * 0.6,
+                  child: getElementCards()
+                )
+                /*Container(
                   height: mediaQueryHeight * 0.2,
                   width: mediaQueryWidth * 0.6,
                   color: Colors.blue,
                   child: Container(), // draw cards
-                ),
+                ),*/
               ]
           ),
 
@@ -203,90 +263,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       ),
     );
 
-    /*return Scaffold(
-      body: Column(
-        children: <Widget>[
-          Row(
 
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-
-            children: <Widget>[
-              Container(
-                child: RawMaterialButton(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                  ),
-                  child: Icon(Icons.arrow_downward, color: Colors.blue),
-                  onPressed: () {
-                    /*dynamic resp = callable.call();
-                    print(resp.toString());
-                    var json = jsonDecode(resp.;
-                    print(json.toString());*/
-                  },
-                ),
-              ),
-              Container(
-                width: mediaQueryWidth * 0.5,
-                height: mediaQueryHeight * 0.2,
-                color: Colors.yellowAccent,
-              ),
-              Container(
-
-                child: RawMaterialButton(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                  ),
-                  child: Icon(Icons.message, color: Colors.blue,),
-                  onPressed: () {},
-                ),
-              ),
-            ],
-          ),
-
-          Row(
-            children: <Widget> [
-              Container(
-                height: mediaQueryHeight * 0.5,
-                child: Container(), // draw cards
-              ),
-              Column(
-                children: <Widget>[
-
-                ],
-              ),
-              Container()
-            ]
-          ),
-
-          Row(
-
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-
-            children: <Widget>[
-              Container(
-                child: RawMaterialButton(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                  ),
-                  child: Icon(Icons.arrow_downward, color: Colors.blue),
-                  onPressed: () {},
-                ),
-              ),
-              Container(
-                width: mediaQueryWidth * 0.5,
-                height: mediaQueryHeight * 0.2,
-                color: Colors.yellowAccent,
-              ),
-              Container(
-
-                child: RawMaterialButton(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                  ),
-                  child: Icon(Icons.settings, color: Colors.blue,),
-                  onPressed: () {},
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );*/
   }
+
+
 }
