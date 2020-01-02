@@ -54,8 +54,8 @@ class _MainScreenState extends State<MainScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Container(
-                color: Colors.cyanAccent,
-                height: mediaQueryData.size.height/2,
+                //color: Colors.cyanAccent,
+                //height: mediaQueryData.size.height/2,
                 margin: EdgeInsets.all(iconButtonMargin),
                 child: IconButton(
                   icon: Icon(Icons.arrow_back_ios),
@@ -85,38 +85,41 @@ class _MainScreenState extends State<MainScreen> {
               ValueListenableBuilder<gameType> (
                 valueListenable: currGT,
                 builder: (context, currentIndex, Widget child) {
-                  return Container (
-                      height: mediaQueryData.size.height/2,
-                      width: mediaQueryData.size.width * 0.6,
-                      color: Colors.blue,
-                      child: gameTypeWindow[currGT.value]
+                  return Container(
+                    height: mediaQueryData.size.height/2,
+                    width: mediaQueryData.size.width * 0.6,
+                    //color: Colors.blue,
+                    child: Container (
+                      decoration: BoxDecoration(
+                        border: new Border.all(
+                          color: Colors.blue,
+                          width: 5.0,
+                          style: BorderStyle.solid
+                        ),
+                        borderRadius: new BorderRadius.all(new Radius.circular(10.0))
+                      ),
+                      //color: Colors.blue,
+                      child: Container(color: Colors.blue, child: gameTypeWindow[currGT.value])
+                    ),
                   );
                 }
               ),
-              /*Container(
-                height: mediaQueryData.size.height/2,
-                width: mediaQueryData.size.width * 0.6,
-                color: Colors.blue,
-                child: gameTypeWindow[selectedGameType]
-              ),*/
               Container(
-                color: Colors.cyanAccent,
-                height: mediaQueryData.size.height/2,
+                //color: Colors.cyanAccent,
+                //height: mediaQueryData.size.height/2,
                 margin: EdgeInsets.all(iconButtonMargin),
                 child: IconButton(
                   icon: Icon(Icons.arrow_forward_ios),
                   color: Colors.black,
                   onPressed: () {
                     setState(() {
-                      setState(() {
-                        if(currentIndex.value == types.length - 1) {
-                          currentIndex.value = 0;
-                        }
-                        else {
-                          currentIndex.value++;
-                        }
-                        currGT.value = types[currentIndex.value];
-                      });
+                      if(currentIndex.value == types.length - 1) {
+                        currentIndex.value = 0;
+                      }
+                      else {
+                        currentIndex.value++;
+                      }
+                      currGT.value = types[currentIndex.value];
                     });
                   },
                 ),
@@ -128,6 +131,7 @@ class _MainScreenState extends State<MainScreen> {
             width: mediaQueryData.size.width * 0.6,
             height: mediaQueryData.size.height * 0.07,
             child: RaisedButton(
+              //shape:  ,
               child: Text(
                 "Play",
               ),

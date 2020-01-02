@@ -1,3 +1,5 @@
+import 'package:chemistry_game/animations/element_comet.dart';
+import 'package:chemistry_game/backgrounds/home_background.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/screens/authenticate/login_screen.dart';
 import 'package:chemistry_game/screens/authenticate/register_screen.dart';
@@ -11,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:chemistry_game/services/database.dart';
 import 'package:chemistry_game/screens/home/main_screen.dart';
 import 'package:chemistry_game/constants/text_styling.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 class HomeScreen extends StatefulWidget {
 
@@ -53,9 +56,83 @@ class HomeScreenState extends State<HomeScreen> {
     print("Third user");
     print(user.uid);
 
+
+
     //UserData userData = DatabaseService(user.uid).userDataFromSnapshot();
 
     return Scaffold(
+      appBar: AppBar(),
+      endDrawer: Drawer(
+        child: ListView(
+          children: <Widget>[
+            Container(
+              height: 100,
+              child: DrawerHeader(
+                child: Text("Home Menu"),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+            ListTile(
+              title: Text('Home'),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('Profile'),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 1;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('Friends'),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 2;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('Ranking'),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 3;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text("Log out"),
+              onTap: () async {
+                await _auth.signOut();
+              },
+            )
+          ],
+        ),
+      ),
+      body: Stack(
+        children: <Widget> [
+          HomeBackground(),
+          ElementComet(name: "H2"),
+          Center(
+
+            child: _widgetOptions.elementAt(_selectedIndex),
+
+          ),
+      ]
+      ),
+    );
+
+    /*return Scaffold(
       appBar: AppBar(
         title: Text("Chemistry Game"),
         elevation: 0.0,
@@ -104,6 +181,6 @@ class HomeScreenState extends State<HomeScreen> {
       ),
 
 
-    );
+    );*/
   }
 }
