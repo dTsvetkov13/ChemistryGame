@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class ElementCard {
@@ -54,6 +55,15 @@ class ElementCard {
           )
         ],
       ),
+    );
+  }
+
+  Draggable drawDraggableElementCard(double width, double height) {
+    return Draggable(
+      data: this,
+      child: this.draw(width, height),
+      childWhenDragging: Container(color: Colors.teal,),
+      feedback: this.draw(width, height),
     );
   }
 }

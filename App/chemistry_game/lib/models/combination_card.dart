@@ -1,3 +1,5 @@
+//TODO: Rename this class to "reaction_card" (i'm not sure)
+
 import 'package:flutter/material.dart';
 
 class CombinationCard {
@@ -11,9 +13,8 @@ class CombinationCard {
       height: height * 0.97,
       child: Center(child: Text(name)),
       decoration: BoxDecoration(
-        border: Border.all(width: width * 0.97)
+        border: Border.all(width: width * 0.03)
       ),
-
     );
   }
 }
