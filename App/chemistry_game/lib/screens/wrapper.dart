@@ -15,7 +15,7 @@ class _WrapperState extends State<Wrapper> {
 
     final user = Provider.of<User>(context);
 
-    print('First user - ${user}');
+    print('First user - $user');
 
     if(user == null) {
       return Authenticate();
