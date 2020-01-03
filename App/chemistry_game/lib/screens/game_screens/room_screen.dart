@@ -7,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
 import 'package:chemistry_game/models/element_card.dart';
 
+// ignore: must_be_immutable
 class BuildRoomScreen extends StatefulWidget {
 
   final String roomId;
@@ -24,14 +25,17 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   String roomId;
   _BuildRoomScreenState({this.roomId, this.player});
 
+  ValueNotifier<int> listViewStartingIndex = ValueNotifier<int>(0);
+
   bool showElementCards = true;
 
+  ElementCard lastCard = ElementCard(name: "H2", group: "2A", period: 1); //TODO: get this from the DB
 
   @override
   Widget build(BuildContext context) {
 
     SystemChrome.setEnabledSystemUIOverlays([]);
-    player.setElementCards();
+    //player.setElementCards();
     player.setCombinationCards();
 
     Reaction reaction = new Reaction(ReactionType.Combination);
@@ -60,10 +64,11 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     player.getElementCards().forEach( (e) => elementCards.add(e.drawDraggableElementCard(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)));
     combinationCards.add(player.combinationCards.elementAt(0).draw(50, 50));
 
-    ListView getElementCards() {
+    ListView getElementCards(int startingIndex) {
       return ListView(
         scrollDirection: Axis.horizontal,
-        children: elementCards//<Widget>[
+        children: elementCards.sublist(startingIndex,
+            startingIndex+6 > player.getElementCards().length ? player.getElementCards().length : startingIndex+6)//<Widget>[
           /*ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
           ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
           ElementCard(name: "02", group: "2A", period: 1).draw(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2),
@@ -129,10 +134,13 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 child: RawMaterialButton(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                   ),
-                  child: Icon(Icons.arrow_forward, color: Colors.blue),
+                  child: Icon(Icons.arrow_back, color: Colors.blue),
                   onPressed: () {
                     setState(() {
-                      showElementCards = true;
+                      //showElementCards = true;
+                      if(!(listViewStartingIndex.value - 6 < 0)) {
+                        listViewStartingIndex.value -= 6;
+                      }
                     });
                     /*dynamic resp = callable.call();
                     print(resp.toString());
@@ -165,8 +173,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 
-                  //TODO : see why this does not work
-
                   children: <Widget>[
                     //Deck
                     Container(
@@ -175,20 +181,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                       color: Colors.cyanAccent,
                     ),
 
-
                     //Last Card
-                    /*Container(
-                      height: mediaQueryHeight * 0.4,
-                      width: mediaQueryWidth * 0.15,
-                      color: Colors.purpleAccent,
-                    ),*/
-                    ElementCard(name: "H2", group: "3A", period: 1).draw(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
+                    drawLastCardDragTarget(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
                     //Build Menu
-                    /*Container(
-                      height: mediaQueryHeight * 0.4,
-                      width: mediaQueryWidth * 0.15,
-                      color: Colors.deepOrange,
-                    ),*/
+
                     Container(
                       height: mediaQueryHeight * 0.4,
                       width: mediaQueryWidth * 0.15,
@@ -200,7 +196,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 title: Center(child: Text("Build Menu")),
-                                //content: createBuildMenuContent(),
                                 content: Container(
                                   width: mediaQueryWidth * 0.8,
                                   height: mediaQueryHeight * 0.8,
@@ -229,51 +224,17 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 width: mediaQueryWidth * 0.6,
               ),
 
-
-
-              /*SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Expanded(
-                    child: ListView(
-                        children: <Widget>[
-                          Container(
-                            height: mediaQueryHeight * 0.2,
-                            width: mediaQueryWidth * 0.3,
-                            color: Colors.cyanAccent,
-                          ),
-                          Container(
-                            height: mediaQueryHeight * 0.2,
-                            width: mediaQueryWidth * 0.3,
-                          ),
-                          Container(
-                            height: mediaQueryHeight * 0.2,
-                            width: mediaQueryWidth * 0.3,
-                            color: Colors.cyanAccent,
-                          ),Container(
-                            height: mediaQueryHeight * 0.2,
-                            width: mediaQueryWidth * 0.3,
-                          ),Container(
-                            height: mediaQueryHeight * 0.2,
-                            width: mediaQueryWidth * 0.3,
-                            color: Colors.cyanAccent,
-                          ),
-
-
-                        ]
-                    ),
-                  )
-              )*/
               Container(
                 height: mediaQueryHeight * 0.2,
                 width: mediaQueryWidth * 0.6,
-                child: showElementCards ? getElementCards() : getCombinationCards()
+                child: ValueListenableBuilder(
+                  valueListenable: listViewStartingIndex,
+                  builder: (BuildContext context, int value, Widget child) {
+                    return getElementCards(listViewStartingIndex.value);
+                  },
+                  child: getElementCards(listViewStartingIndex.value),
+                )
               )
-              /*Container(
-                height: mediaQueryHeight * 0.2,
-                width: mediaQueryWidth * 0.6,
-                color: Colors.blue,
-                child: Container(), // draw cards
-              ),*/
             ]
           ),
 
@@ -327,11 +288,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 child: RawMaterialButton(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                   ),
-                  child: Icon(Icons.arrow_back, color: Colors.blue),
+                  child: Icon(Icons.arrow_forward, color: Colors.blue),
                   onPressed: () {
                     setState(() {
-                      showElementCards = false;
-                      //print("Arrow Back clicked : {$showElementCards}");
+                      if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
+                        listViewStartingIndex.value += 6;
+                      }
                     });
                   },
                 ),
@@ -347,9 +309,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   }
 
   Column createBuildMenuContent(double width, double height) {
-
-
-
     List<Widget> buildMenuReactions = new List<Widget>();
 
     for(int i = 0; i < player.buildMenuReactions.value.length; i++) {
@@ -561,6 +520,26 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           });
         },
       ),
+    );
+  }
+
+  Widget drawLastCardDragTarget(double width, double height) {
+    return DragTarget<ElementCard>(
+      builder: (BuildContext context, List<ElementCard> incoming, rejected) {
+        return lastCard.draw(width, height);
+      },
+
+      onWillAccept: (data) => data.group == lastCard.group || data.period == lastCard.period,
+
+      onAccept: (data) {
+        setState(() {
+          lastCard = data;
+        });
+      },
+
+      onLeave: (data) {
+
+      },
     );
   }
 }
