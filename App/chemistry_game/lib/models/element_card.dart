@@ -1,8 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:chemistry_game/models/card.dart';
 
-class ElementCard {
-
+class ElementCard extends card{
+  //TODO: add id - uuid
   final String name;
   final String group;
   final int period;
@@ -59,11 +60,26 @@ class ElementCard {
   }
 
   Draggable drawDraggableElementCard(double width, double height) {
-    return Draggable(
-      data: this,
-      child: this.draw(width, height),
-      childWhenDragging: Container(color: Colors.teal,),
-      feedback: this.draw(width, height),
+    return Draggable<ElementCard>(
+      data: ElementCard(name: name, group: group, period: period),
+      child: this != null ? this.draw(width, height) : Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      feedback: this != null ? this.draw(width, height) : Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      childWhenDragging: Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      onDragCompleted: () {
+
+      },
     );
   }
 }
