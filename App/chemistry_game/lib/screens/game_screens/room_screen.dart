@@ -403,7 +403,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
           switch(buildMenuShowingCardsType.value) {
             case (BuildMenuShowingCardsType.ElementCards):
-              player.getElementCards().forEach((card) => cards.add(card.drawDraggableElementCard(width * 0.1, height)));
+              player.getElementCards().forEach((card) => cards.add(card.drawDraggableCard(width * 0.1, height)));
               break;
             case (BuildMenuShowingCardsType.ReactionCards):
               player.combinationCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));//TODO: combinationCards change name

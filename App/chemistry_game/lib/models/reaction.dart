@@ -69,7 +69,6 @@ class Reaction {
           ValueListenableBuilder(
             valueListenable: updated,
             builder: (BuildContext context, bool value, child) {
-              print("Builder called");
               return Expanded(
                 child: ListView(
                   scrollDirection: Axis.horizontal,
@@ -242,11 +241,6 @@ class Reaction {
       height: height,
       child: DragTarget<card>(
         builder: (BuildContext context, List<card> incoming, rejected) {
-          if(leftSideCards.containsKey(uuid)) {
-            print("lEFT SIDE - ${leftSideCards[uuid]}");
-          } else if(rightSideCards.containsKey(uuid)) {
-            print("Right SIDE - ${rightSideCards[uuid]}");
-          }
           return Container(
             color: Colors.blue
           );
@@ -260,7 +254,6 @@ class Reaction {
           } else if(rightSideCards.containsKey(uuid)) {
             rightSideCards[uuid] = data;
           }
-          print("Accept");
           updated.value = !updated.value;
         },
 

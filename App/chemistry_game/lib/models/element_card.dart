@@ -59,6 +59,30 @@ class ElementCard extends card{
   }
 
   Draggable drawDraggableElementCard(double width, double height) {
+    return Draggable<ElementCard>(
+      data: ElementCard(name: name, group: group, period: period),
+      child: this != null ? this.draw(width, height) : Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      feedback: this != null ? this.draw(width, height) : Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      childWhenDragging: Container(
+        width: width,
+        height: height,
+        color: Colors.blueGrey,
+      ),
+      onDragCompleted: () {
+
+      },
+    );
+  }
+
+  Draggable drawDraggableCard(double width, double height) {
     return Draggable<card>(
       data: ElementCard(name: name, group: group, period: period),
       child: this != null ? this.draw(width, height) : Container(
