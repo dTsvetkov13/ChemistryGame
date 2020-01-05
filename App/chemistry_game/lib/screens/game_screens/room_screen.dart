@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:chemistry_game/models/card.dart';
 import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/reaction.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
 import 'package:chemistry_game/models/element_card.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 // ignore: must_be_immutable
 class BuildRoomScreen extends StatefulWidget {
@@ -26,10 +28,15 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   _BuildRoomScreenState({this.roomId, this.player});
 
   ValueNotifier<int> listViewStartingIndex = ValueNotifier<int>(0);
+  ValueNotifier<BuildMenuShowingCardsType> buildMenuShowingCardsType =
+                          new ValueNotifier<BuildMenuShowingCardsType>(BuildMenuShowingCardsType.ElementCards);
+
 
   bool showElementCards = true;
 
   ElementCard lastCard = ElementCard(name: "H2", group: "2A", period: 1); //TODO: get this from the DB
+
+  Reaction currReaction = Reaction();
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +45,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     //player.setElementCards();
     player.setCombinationCards();
 
-    Reaction reaction = new Reaction(ReactionType.Combination);
-    reaction.addReactant(0, ElementCard(name: "H2", group: "2A", period: 1));
-    reaction.addReactant(1, ElementCard(name: "O2", group: "2A", period: 1));
-    reaction.addProduct(0, ElementCard(name: "H2O", group: "2A", period: 2));
+    currReaction.addReactant(0, ElementCard(name: "H2", group: "2A", period: 1));
+    currReaction.addReactant(1, ElementCard(name: "O2", group: "2A", period: 1));
+    currReaction.addProduct(0, ElementCard(name: "H2O", group: "2A", period: 2));
 
-    player.buildMenuReactions.value.add(reaction);
-    player.buildMenuReactions.value.add(reaction);
+    //player.buildMenuReactions.value.add(reaction);
+    //player.buildMenuReactions.value.add(reaction);
 
     final mediaQueryData = MediaQuery.of(context);
     final mediaQueryWidth = mediaQueryData.size.width;
@@ -183,8 +189,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
                     //Last Card
                     drawLastCardDragTarget(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
-                    //Build Menu
 
+                    //Build Menu
                     Container(
                       height: mediaQueryHeight * 0.4,
                       width: mediaQueryWidth * 0.15,
@@ -201,11 +207,11 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                                   height: mediaQueryHeight * 0.8,
                                   decoration: BoxDecoration( //TODO: Make it responsible
                                       border: Border.all(
-                                        width: 0.2,
+                                        width: mediaQueryHeight * 0.0025,
                                         color: Colors.black,
                                       )
                                   ),
-                                  child: createBuildMenuContent(mediaQueryWidth * 0.8, mediaQueryHeight * 0.7),
+                                  child: createBuildMenuContent(mediaQueryWidth * 0.8 - mediaQueryHeight * 0.01, mediaQueryHeight * 0.64),
                                 ),
                               );
                             }
@@ -308,7 +314,121 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   }
 
-  Column createBuildMenuContent(double width, double height) {
+  Widget createBuildMenuContent(double width, double height) {
+
+    return Container(
+      width: width,
+      height: height,
+
+      child: Column(
+        children: <Widget>[
+          drawReactionRow(width, height * 0.5, currReaction),
+          drawCardsArea(width, height * 0.5),
+        ],
+      )
+
+    );
+
+  }
+
+  Widget drawCardsArea(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          drawCardTypeButtons(width * 0.1, height),
+          drawCardsAvailable(width * 0.85, height),
+        ],
+      ),
+    );
+  }
+
+  Widget drawCardTypeButtons(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Container(
+            width: width * 0.8,
+            height: height * 0.3,
+            child: RaisedButton(
+              child: Text("E"),
+              onPressed: () {
+                setState(() {
+                  print("Element");
+                  buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ElementCards;
+                });
+              },
+            ),
+          ),
+          Container(
+            width: width * 0.8,
+            height: height * 0.3,
+            child: RaisedButton(
+              child: Text("C"),
+              onPressed: () {
+                setState(() {
+                  print("Reaction");
+                  buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ReactionCards;
+                });
+              },
+            ),
+          ),
+          Container(
+            width: width * 0.8,
+            height: height * 0.3,
+            child: RaisedButton(
+              child: Text("A"),
+              onPressed: () {
+                //TODO: set to AccelerationCards
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget drawCardsAvailable(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      child: ValueListenableBuilder(
+        builder: (BuildContext context, BuildMenuShowingCardsType value , Widget child) {
+          List<Widget> cards = new List<Widget>();
+
+          switch(buildMenuShowingCardsType.value) {
+            case (BuildMenuShowingCardsType.ElementCards):
+              player.getElementCards().forEach((card) => cards.add(card.drawDraggableElementCard(width * 0.1, height)));
+              break;
+            case (BuildMenuShowingCardsType.ReactionCards):
+              player.combinationCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));//TODO: combinationCards change name
+              break;
+            /*case (BuildMenuShowingCardsType.ElementCards):
+              break;*/
+            default: print("Error, invalid type");
+          }
+
+          return ListView(
+            scrollDirection: Axis.horizontal,
+            children: cards,
+          );
+        },
+        child: Container(
+          width: width,
+          height: height,
+          color: Colors.red,
+        ),
+        valueListenable: buildMenuShowingCardsType,
+      ),
+    );
+  }
+
+  /*Column createBuildMenuContent(double width, double height) {
     List<Widget> buildMenuReactions = new List<Widget>();
 
     for(int i = 0; i < player.buildMenuReactions.value.length; i++) {
@@ -369,7 +489,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         )
       ],
     );
-  }
+  }*/
 
   void showSettingsDialog(double width, double height) {
     showDialog(
@@ -427,6 +547,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     );
   }
 
+  /*
   Widget drawEditMenu(double width, double height, Reaction reaction) {
     return ValueListenableBuilder(
       valueListenable: reaction.showEdinMenu,
@@ -461,7 +582,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         crossFadeState: !reaction.showEdinMenu.value ? CrossFadeState.showFirst : CrossFadeState.showSecond,
       ),
     );
-  }
+  }*/
 
   Widget drawReactionRow(double width, double height, Reaction reaction) {
     return Container(
@@ -474,13 +595,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               scrollDirection: Axis.horizontal,
               children: <Widget>[
                 drawCompleteButton(width, height),
-                drawEditButton(width, height, reaction),
-                reaction.draw(width, height)
+                //drawAddCardFieldButton(width, height),
+                reaction.draw(width * 0.8, height),
               ],
             ),
           ),
-          drawDeleteButton(width, height, reaction)
-
+          drawDeleteButton(width * 0.1, height * 0.7, reaction)
         ]
       ),
     );
@@ -491,12 +611,20 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       icon: Icon(Icons.check),
       color: Colors.green,
       onPressed: () {
-
+        //check if reaction is correct
+        //true: reaction.clear(), add bonus points to the player and show a toast for correct reaction
+        //false: show a message which report that the reaction is incorrect
+        Fluttertoast.showToast(
+          msg: "Incorrect reaction",
+          timeInSecForIos: 1,
+          gravity: ToastGravity.BOTTOM,
+          toastLength: Toast.LENGTH_SHORT
+        );
       },
     );
   }
 
-  Widget drawEditButton(double width, double height, Reaction reaction) {
+  /*Widget drawEditButton(double width, double height, Reaction reaction) {
     return IconButton(
       icon: Icon(Icons.edit),
       color: Colors.grey,
@@ -504,20 +632,17 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         reaction.showEdinMenu.value = !reaction.showEdinMenu.value;
       },
     );
-  }
+  }*/
 
   Widget drawDeleteButton(double width, double height, Reaction reaction) {
     return Container(
-      width: width * 0.1,
-      height: height * 0.7,
+      width: width,
+      height: height,
       child: IconButton(
         icon: Icon(Icons.delete_forever),
         color: Colors.red,
         onPressed: () {
-          setState(() {
-            player.deleteReaction(reaction);
-            print(player.buildMenuReactions.value);
-          });
+          reaction.clear();
         },
       ),
     );
@@ -525,7 +650,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   Widget drawLastCardDragTarget(double width, double height) {
     return DragTarget<ElementCard>(
-      builder: (BuildContext context, List<ElementCard> incoming, rejected) {
+      builder: (BuildContext context, List<card> incoming, rejected) {
         return lastCard.draw(width, height);
       },
 
@@ -542,4 +667,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       },
     );
   }
+}
+
+enum BuildMenuShowingCardsType {
+ ElementCards,
+ ReactionCards
+ ///AccelerationCards // in future
 }

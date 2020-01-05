@@ -11,7 +11,6 @@ class ElementCard extends card{
   ElementCard({this.name, this.group, this.period});
 
   Container draw(double width, double height) {
-    
     return Container(
       height: height,
       width: width,
@@ -60,7 +59,7 @@ class ElementCard extends card{
   }
 
   Draggable drawDraggableElementCard(double width, double height) {
-    return Draggable<ElementCard>(
+    return Draggable<card>(
       data: ElementCard(name: name, group: group, period: period),
       child: this != null ? this.draw(width, height) : Container(
         width: width,

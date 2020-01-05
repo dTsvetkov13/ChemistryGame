@@ -44,6 +44,7 @@ class Player{
 
   Player(this.name, this.id) {
     setReactions();
+    setElementCards();
   }
 
   List<ElementCard> getElementCards() {
@@ -64,7 +65,7 @@ class Player{
   }
 
   void setReactions() {
-    Reaction reaction = new Reaction(ReactionType.Combination);
+    Reaction reaction = new Reaction();
     reaction.addReactant(0, ElementCard(name: "H2", group: "2A", period: 1));
     reaction.addReactant(1, ElementCard(name: "O2", group: "2A", period: 1));
     reaction.addProduct(0, ElementCard(name: "H2O", group: "2A", period: 2));
