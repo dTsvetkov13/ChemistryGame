@@ -185,15 +185,17 @@ export const updateRoom = functions.https.onCall(async (data, context) => {
 export const leaveRoom = functions.https.onCall(async (data, context) => { //NOT TESTED
 	const roomId = data.roomId.toString();
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
+	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);
 	const gameType = data.gameType.toString();
 
 	switch (gameType) {
 		case "SingleGame":
 			const playerId = data.playerId.toString();
 
-			await roomRef.delete({["players." + playerId] : {"points": 0}});
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
 
 			await roomRef.update({freeSeats : admin.firestore.FieldValue.increment(1)});
+
 			break;
 		case "TeamGame":
 			//const firstPlayerId = data.firstPlayerId.toString();
