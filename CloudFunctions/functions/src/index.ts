@@ -158,12 +158,13 @@ export const updateRoom = functions.https.onCall(async (data, context) => {
 	const roomId = data.roomId.toString();
 
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
+	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);
 
 	switch (gameType) {
 		case "SingleGame":
 			const playerId = data.playerId.toString();
 
-			await roomRef.update({["players." + playerId] : {"points": 0}});
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 
 			await roomRef.update({freeSeats : admin.firestore.FieldValue.increment(-1)});
 			break;
@@ -171,7 +172,8 @@ export const updateRoom = functions.https.onCall(async (data, context) => {
 			const firstPlayerId = data.firstPlayerId.toString();
 			const secondPlayerId = data.secondPlayerId.toString();
 
-			await roomRef.update({"teams.secondTeam": {[firstPlayerId]: {"points": 0}, [secondPlayerId] : {"points": 0}}});
+			await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+			await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 0});
 			break;
