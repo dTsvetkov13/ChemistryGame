@@ -305,3 +305,20 @@ export const startGame = functions.https.onCall(async(data, context) => {
 		console.log("Next turn : " + nextTurn);
 	}
 })
+
+export const configurePlayers = functions.https.onCall(async (data, context) => {
+	const roomId = data.roomId.toString();
+	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+	const playersRef = admin.firestore().collection("players");
+	const usersRef = admin.firestore().collection("users");
+
+	for(let i = 0; i < 4; i++) //TODO: use "playersCount" instead of "4"
+	{
+		const playerId = (await roomDataRef.get()).get("players")[i.toString()];
+		await playersRef.doc(playerId.toString()).set({"name": (await usersRef.doc(playerId.toString()).get()).get("username")});
+
+		console.log("Player id : " + playerId);
+	}
+
+	return "Successfully configured players";
+})
