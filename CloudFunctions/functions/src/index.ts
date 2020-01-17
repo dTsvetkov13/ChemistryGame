@@ -60,6 +60,7 @@ export const createRoom = functions.https.onCall(async (data, context) => {
 	const roomId = data.roomId; //TODO : create UUID
 
 	const roomRef = admin.firestore().collection("rooms").doc(roomId.toString());
+	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId.toString());
 
 	await roomRef.set({"gameType": gameType});
 
@@ -72,25 +73,8 @@ export const createRoom = functions.https.onCall(async (data, context) => {
 
 			await roomRef.update({"freeSeats": 3});
 
-			await roomRef.update({"players": {[playerId]: {"points": 0}}});
-
-			/*await admin.auth().createCustomToken(playerToken)
-				.then(async(token) => {
-					console.log("Token: " + token);
-					await admin.messaging().subscribeToTopic(token, roomId.toString())
-					.then(function(response) {
-						// See the MessagingTopicManagementResponse reference documentation
-						// for the contents of response.
-						console.log('Successfully subscribed to topic:', response.errors[0].error);
-					})
-					.catch(function(error) {
-						console.log('Error subscribing to topic:', error);
-					});
-				})
-				.catch(function(error) {
-					console.log("Error creating the token : ", error)
-				});
-			*/
+			//await roomDataRef.update({"players": {[playerId]: {"points": 0}}});
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 			
 			console.log("Token: " + playerToken);
 					await admin.messaging().subscribeToTopic(playerToken, roomId.toString())
@@ -125,19 +109,22 @@ export const createRoom = functions.https.onCall(async (data, context) => {
 			const firstPlayerId = data.firstPlayerId.toString();
 			const secondPlayerId = data.secondPlayerId.toString();
 
-			await roomRef.set({"teams": {"firstTeam": {[firstPlayerId]: {"points": 0}, [secondPlayerId] : {"points": 0}}}});
+			//await roomDataRef.set({"teams": {"firstTeam": {[firstPlayerId]: {"points": 0}, [secondPlayerId] : {"points": 0}}}});
+			
+			await roomDataRef.set({"firstTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+			await roomDataRef.update({"firstTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 2});
 
 			//TODO: Subscribe to topic with tokens received from the players
 
-			admin.messaging().subscribeToTopic([firstPlayerId, secondPlayerId], roomId.toString())
+			/*admin.messaging().subscribeToTopic([firstPlayerId, secondPlayerId], roomId.toString())
 				.then(function(response) {
 					console.log('Successfully subscribed to topic:', response);
 				})
 				.catch(function(error) {
 					console.log('Error subscribing to topic:', error);
-				});
+				});*/
 
 			break;
 		default:
