@@ -258,18 +258,9 @@ export const startGame = functions.https.onCall(async(data, context) => {
 
 	console.log("Before players");
 
-	await admin.firestore().collection("rooms").doc(roomId.toString()).get()
-		.then((snapshot) => {
-			if(snapshot.data()) {
-				const snapshotData = snapshot.data()!.players;
-				console.log("Snapshot data : " + snapshotData[8].points);
-			}
-		})
-	
-	const players = await (await roomRef.get()).get("players").array.forEach((element: String) => {
-		console.log("Element : " + element);
-	});;
-	console.log("players : " + players);
+	//configurePlayers
+	//Dealing
+
 
 	switch (gameType) {
 		case "SingleGame":
@@ -280,8 +271,6 @@ export const startGame = functions.https.onCall(async(data, context) => {
 		default:
 			break;
 	}
-
-	//console.log("Before while, players : " + players);
 
 	while(await (await roomRef.get()).get("finishedPlayers") !== requiredFinishedPlayers) {
 		
@@ -312,7 +301,9 @@ export const configurePlayers = functions.https.onCall(async (data, context) => 
 	const playersRef = admin.firestore().collection("players");
 	const usersRef = admin.firestore().collection("users");
 
-	for(let i = 0; i < 4; i++) //TODO: use "playersCount" instead of "4"
+	const playersCount = 1;
+
+	for(let i = 0; i < playersCount; i++)
 	{
 		const playerId = (await roomDataRef.get()).get("players")[i.toString()];
 		await playersRef.doc(playerId.toString()).set({"name": (await usersRef.doc(playerId.toString()).get()).get("username")});
@@ -321,4 +312,42 @@ export const configurePlayers = functions.https.onCall(async (data, context) => 
 	}
 
 	return "Successfully configured players";
+})
+
+export const dealing = functions.https.onCall(async(data, context) => {
+	const roomId = data.roomId.toString();
+	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+	const playersRef = admin.firestore().collection("players");
+	const playerIds = [];
+	const cardsToDeal = 1; //TODO: change to n
+	const playersCount = 1; //TODO: change to 4
+
+	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar"]; //TODO: get them from somewhere
+	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "H2O"]; //TODO: get them from somewhere
+
+	for(let i = 0; i < playersCount; i++)
+	{
+		playerIds[i] = (await roomDataRef.get()).get("players")[i.toString()];
+	}
+
+	let playerIndex = 0;
+
+	for(let i = 0; i < playersCount * cardsToDeal; i++)
+	{
+		await playersRef.doc(playerIds[playerIndex]).update({"elementCards": admin.firestore.FieldValue.arrayUnion(elementCards[i])});
+		await playersRef.doc(playerIds[playerIndex]).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(compoundCards[i])});
+
+		console.log("Cards added");
+
+		if(playerIndex === 3) playerIndex = 0;
+		else playerIndex++;
+	}
+
+	await roomDataRef.update({"lastCard": elementCards[playersCount * cardsToDeal]});
+
+	await elementCards.splice(0, playersCount * cardsToDeal + 1);
+
+	await roomDataRef.update({"deck": elementCards});
+
+	return "Successfully dealing";
 })
