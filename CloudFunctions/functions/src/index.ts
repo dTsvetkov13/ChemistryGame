@@ -567,6 +567,8 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 
 	if(leftSideCards.length) leftSideString += leftSideCards[0];
 
+	//TODO: CHECK THE LENGHT OF The cards
+
 	for(let i = 1; i < leftSideCards.length; i++)
 	{
 		leftSideString += " + " + leftSideCards[i];
@@ -675,21 +677,32 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 				if(newCardsCount === 1)
 				{
 					console.log("Add this card: " + newCards);
-					//Add this card to the Player and remove the others
-					//maybe add bonus points
+
+					let cardData = "";
+
+					//Deleting cards
+
+					await deleteCardsFromPlayer(playerId, leftSideCards, rightSideCards);
+					console.log("Deleted cards");
+
+					//Check the newCard if it is compound or element
+
+					cardData = await addNewCardToPlayer(playerId, newCards);
+					console.log("Added new card");
+
 					var correctMsgWithData = {
 						"notification": {
 							"title": "Complete Reaction Successed",
-							"body": "Correct reaction"
+							"body": "Correct reaction with one missing reactant"
 						},
 						"data": {
-							"cardToAdd": newCards.toString(),
+							"cardToAdd": cardData.toString(),
 						}
 					};
-			
+
 					await admin.messaging().sendToDevice(playerToken, correctMsgWithData);
-
-
+					
+					//TODO: maybe add bonus points
 				}
 				else
 				{
@@ -718,13 +731,126 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 	
 			await admin.messaging().sendToDevice(playerToken, correctMsgWithoutData);
 
+			//Deleting cards
+
+			await deleteCardsFromPlayer(playerId, leftSideCards, rightSideCards);
+
+			console.log("After deleting");
+
 			//remove the cards from the player
 			//add bonus points
-			admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
+			await admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
 		}
 	}).catch(console.error)
 	//If numpods is equel to 0, there is such a reaction
 })
+
+async function addNewCardToPlayer(playerId: string, newCard: any)
+{
+	var upperCases = 0;
+	let cardData = "";
+
+	for(let i = 0; i < newCard.length; i++)
+	{
+		if(newCard[i] === newCard[i].toUpperCase())
+		{
+			upperCases++;
+		}
+	}
+
+	if(upperCases >= 2)
+	{
+		console.log("Compound Found");
+		cardData = newCard.toString();
+	}
+	else
+	{
+		await admin.firestore().collection("elementCards").doc(newCard.toString()).get().then(async (doc: any) => {
+			console.log("DOC DATA : " + doc.data());
+			if(doc.exists)
+			{
+				cardData += doc.data().symbol;
+				cardData += "," + doc.data().group + "," + doc.data().period;
+			}
+		});
+	}
+
+	if(upperCases >= 2)
+	{
+		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(newCard)});	
+	}
+	else
+	{
+		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(newCard)});
+	}
+
+	return cardData;
+}
+
+async function deleteCardsFromPlayer(playerId: string, leftSideCards: any, rightSideCards: any)
+{
+	var upperCases = 0;
+
+	for(let i = 0; i < leftSideCards.length; i++)
+	{
+		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayRemove(leftSideCards[i])})
+		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayRemove(leftSideCards[i])})
+		
+		upperCases = 0;
+
+		for(let j = 0; j < leftSideCards[i].length; j++)
+		{
+			if(leftSideCards[i][j] === leftSideCards[i][j].toUpperCase())
+			{
+				upperCases++;
+			}
+
+			if(upperCases >= 2) break;
+		}
+
+		if(upperCases >= 2)
+		{
+			await admin.firestore().collection("players").doc(playerId).update({"compoundCardsCount": admin.firestore.FieldValue.increment(-1)});
+		}
+		else
+		{
+			await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
+		}
+	}
+
+	for(let i = 0; i < rightSideCards.length; i++)
+	{
+		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayRemove(rightSideCards[i])})
+		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayRemove(rightSideCards[i])})
+		
+		upperCases = 0;
+
+		for(let j = 0; j < rightSideCards[i].length; j++)
+		{
+			if(rightSideCards[i][j] === rightSideCards[i][j].toUpperCase())
+			{
+				upperCases++;
+			}
+
+			if(upperCases >= 2) break;
+		}
+
+		if(upperCases >= 2)
+		{
+			await admin.firestore().collection("players").doc(playerId).update({"compoundCardsCount": admin.firestore.FieldValue.increment(-1)});
+		}
+		else
+		{
+			await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
+		}
+	}
+
+	if((await admin.firestore().collection("players").doc(playerId).get()).get("elementCardsCount") <= 0)
+	{
+		const roomId = await (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
+		await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+	}
+}
 
 export const placeCard = functions.https.onCall(async (data, context) => {
 	const playerId = data.playerId.toString();
@@ -760,7 +886,17 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 					await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
 				}
 
+				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+
 				//TODO: Send update player elementCards data;
+				var placedCardMsg = {
+					"notification": {
+						"title": "Placed Card",
+						"body": "You have placed card successfully"
+					}
+				};
+
+				await admin.messaging().sendToTopic(roomId, placedCardMsg);
 
 				return true;
 			}
@@ -986,11 +1122,11 @@ async function dealing (data: any) {
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
 	const playersRef = admin.firestore().collection("players");
 	const playerIds = [];
-	const elementCardsToDeal = 1;
+	const elementCardsToDeal = 2;
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar"]; //TODO: get them from somewhere
+	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "B", "Na", "Al", "Be"]; //TODO: get them from somewhere
 	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "NaCl", "NaCl", "NaCl", "NaCl", "NaCl"]; //TODO: get them from somewhere
 
 	for(let i = 0; i < playersCount; i++)
