@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
 class CompoundCard extends card{
-  final String name;
+  String name;
 
   CompoundCard({this.name});
+  CompoundCard.fromString(String data){
+    var splitted = data.split(",");
+    this.name = splitted[0];
+    this.uuid = splitted[1];
+  }
 
   Container draw(double width, double height){
     return Container(
@@ -25,7 +30,7 @@ class CompoundCard extends card{
             border: Border.all(width: width * 0.03)
         ),
         child: Draggable<card>(
-          data: CompoundCard(name: name),
+          data: this,
           child: this != null ? this.draw(width, height) : Container(
             width: width,
             height: height,

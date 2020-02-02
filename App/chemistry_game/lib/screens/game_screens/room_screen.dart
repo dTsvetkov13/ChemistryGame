@@ -1,8 +1,11 @@
 import 'dart:convert';
 
 import 'package:chemistry_game/models/card.dart';
+import 'package:chemistry_game/models/compound_card.dart';
 import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/reaction.dart';
+import 'package:chemistry_game/screens/game_screens/summary_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
@@ -12,42 +15,317 @@ import 'package:fluttertoast/fluttertoast.dart';
 // ignore: must_be_immutable
 class BuildRoomScreen extends StatefulWidget {
 
+  FirebaseMessaging firebaseMessaging;
   final String roomId;
-  BuildRoomScreen({this.roomId});
-
-  Player player = new Player("ivan", "23232");
+  final String playerId;
+  final ElementCard lastCardData;
+  final playersNames;
+//  final playerElementCards;
+//  final playerCompoundCards;
+  final playerName;
+  Player player;
+  BuildRoomScreen({this.roomId, this.playerId,
+                    this.lastCardData, this.playersNames, this.playerName, this.player, this.firebaseMessaging});
 
   @override
-  _BuildRoomScreenState createState() => _BuildRoomScreenState(roomId: roomId, player: player);
+  _BuildRoomScreenState createState() => _BuildRoomScreenState(roomId: roomId, playerId: playerId,
+                    lastCardData: lastCardData, playersNames: playersNames,
+                    playerName: playerName, player: player, firebaseMessaging: firebaseMessaging);
 }
 
 class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
-  Player player;
+  FirebaseMessaging firebaseMessaging;
+  ElementCard lastCardData;
+  String playerId;
   String roomId;
-  _BuildRoomScreenState({this.roomId, this.player});
+  var playersNames;
+  var playerName;
+  var leftPlayerName;
+  var rightPlayerName;
+  var topPlayerName;
+  Player player;
+  _BuildRoomScreenState({this.roomId, this.playerId, this.lastCardData, this.playersNames,
+                          this.playerName, this.player, this.firebaseMessaging});
+
+
+//  Player player = new Player("Denis", "232"); //= new Player("Denis", playerId);
+//  player.setPlayerData(playerName, playerId);
 
   ValueNotifier<int> listViewStartingIndex = ValueNotifier<int>(0);
   ValueNotifier<BuildMenuShowingCardsType> buildMenuShowingCardsType =
                           new ValueNotifier<BuildMenuShowingCardsType>(BuildMenuShowingCardsType.ElementCards);
 
-
   bool showElementCards = true;
 
-  ElementCard lastCard = ElementCard(name: "H2", group: "2A", period: 1); //TODO: get this from the DB
+  //ElementCard lastCard = ElementCard(name: "H2", group: "2A", period: 1); //TODO: get this from the DB
 
   Reaction currReaction = Reaction();
+
+  final HttpsCallable callPlaceCard = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'placeCard',
+  );
+
+  final HttpsCallable callCompleteReaction = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'completeReaction',
+  );
+
+  final HttpsCallable callGetDeckCard = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getDeckCard',
+  );
+
+  //FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
+
+  String playerToken;
+  var toastMsg;
+  var cardToRemove = new ElementCard();
+  var playerOnTurn;
+
+  @override
+  void initState() {
+    print("called");
+    super.initState();
+    firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) {
+          var data = message["notification"];
+          print("Message received in room screen: $data");
+
+          switch(data["title"])
+          {
+            //TODO: chekc if Player Cards is used
+            case("Player Cards"):
+              var elementCards = message["data"]["elementCards"];
+              var compoundCards = message["data"]["compoundCards"];
+
+              print("Element Cards: " + elementCards);
+              print("Compound Cards: " + compoundCards);
+              break;
+            case("Start"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+              print(toastMsg);
+              break;
+            case("Game Finished"):
+              print("Game Finished");
+
+              if(message.containsKey("data")) {
+                var firstPlace = message["data"]["firstPlace"];
+                var secondPlace = message["data"]["secondPlace"];
+                var thirdPlace = message["data"]["thirdPlace"];
+                var fourthPlace = message["data"]["fourthPlace"];
+                print(firstPlace);
+                print(secondPlace);
+                print(thirdPlace);
+                print(fourthPlace);
+
+
+                if(firstPlace == null) break;
+                else {
+                  List<String> places = [
+                    firstPlace.toString(),
+                    secondPlace.toString(),
+                    thirdPlace.toString(),
+                    fourthPlace.toString()
+                  ];
+                  print(places[0]);
+                  Navigator.pop(context);
+                  Navigator.push(context,
+                    MaterialPageRoute(builder: (context) =>
+                      SummaryScreen(places)
+                    ));
+                }
+              }
+              break;
+            case("Placed Card"):
+              player.removeElementCard(cardToRemove.name, cardToRemove);
+              print(cardToRemove.name);
+              setState(() {
+                listViewStartingIndex = listViewStartingIndex;
+              });
+              break;
+            case("Not Your Turn"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+              break;
+            case("Incorrect card"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+              break;
+            case("Player Turn"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+
+              playerOnTurn = message["data"]["playerId"];
+              print(playerOnTurn);
+
+              break;
+            case("Missed Turn"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+              var currPlayerId = message["data"]["playerId"];
+
+              if(currPlayerId == playerId) {
+                var cardToAddString = message["data"]["cardToAdd"];
+                print(cardToAddString);
+
+                player.addElementCard(ElementCard.fromString(cardToAddString.toString()));
+                setState(() {
+                  listViewStartingIndex = listViewStartingIndex;
+                });
+              }
+              break;
+            case("New Last Card"):
+              var newLastCard = message["data"]["newLastCard"];
+              //var newLastCardSplitted = newLastCard.toString().split(",");
+              var splitted = newLastCard.toString().split(",");
+              setState(() {
+                lastCardData = ElementCard(name: splitted[0], group: splitted[1], period: int.parse(splitted[2]));
+              });
+              break;
+            case("Complete Reaction Failed"):
+              toastMsg = message["notification"]["body"];
+              print(toastMsg);
+              currReaction.clear();
+              showToast(toastMsg);
+              break;
+            case("Cannot Place Card"):
+              toastMsg = message["notification"]["body"];
+              showToast(toastMsg);
+              print(toastMsg);
+              break;
+            case("Receive Deck Card"):
+              var cardData = message["data"]["cardToGiveData"];
+
+              //var cardDataSplitted = cardData.toString().split(",");
+              print("Deck card: " + cardData);
+              //player.addElementCard(ElementCard(name: cardDataSplitted[0], group: cardDataSplitted[1], period: int.parse(cardDataSplitted[2])));
+              player.addElementCard(ElementCard.fromString(cardData.toString()));
+              setState(() {
+                listViewStartingIndex = listViewStartingIndex;
+              });
+              break;
+            case("Empty Side"):
+              toastMsg = message["notification"]["body"];
+              print(toastMsg);
+              currReaction.clear();
+              showToast(toastMsg);
+              break;
+            case("Complete Reaction Successed"):
+              toastMsg = message["notification"]["body"];
+              var cardToAdd = "";
+
+              currReaction.leftSideCards.values.forEach((card) {
+                if(card is ElementCard)
+                {
+                  player.removeElementCard(card.name, card);
+                }
+                else
+                {
+                  player.removeCompoundCard(card);
+                }
+              });
+
+              currReaction.rightSideCards.values.forEach((card) {
+                if(card is ElementCard)
+                {
+                  player.removeElementCard(card.name, card);
+                }
+                else
+                {
+                  player.removeCompoundCard(card);
+                }
+              });
+
+              currReaction.clear();
+
+              print(player.compoundCards.length);
+              print(player.elementCards.length);
+              print("Before add card");
+
+              print(toastMsg);
+              showToast(toastMsg);
+
+              setState(() {
+                if (buildMenuShowingCardsType.value ==
+                    BuildMenuShowingCardsType.ElementCards) {
+                  buildMenuShowingCardsType.value =
+                      BuildMenuShowingCardsType.ReactionCards;
+                }
+                else {
+                  buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ElementCards;
+                }
+              });
+              setState(() {
+                listViewStartingIndex = listViewStartingIndex;
+              });
+
+              if(message["data"].containsKey("cardToAdd")) //TODO: see why this do not work
+              {
+                cardToAdd = message["data"]["cardToAdd"];
+                print("CardToAdd: " + cardToAdd);
+
+                if(cardToAdd.contains(","))
+                {
+                  //var cardData = cardToAdd.split(",");
+                  //player.addElementCard(ElementCard(name: cardData[0], group: cardData[1], period: int.parse(cardData[2])));
+                  player.addElementCard(ElementCard.fromString(cardToAdd.toString()));
+                }
+                else
+                {
+                  player.addCompoundCard(CompoundCard.fromString(cardToAdd));
+                }
+              }
+              print("After check the cardToAdd");
+              setState(() {
+                buildMenuShowingCardsType = buildMenuShowingCardsType;
+              });
+
+              break;
+          }
+
+          return;
+        }
+    );
+    firebaseMessaging.getToken().then((token) {
+      playerToken = token;
+      print("Token : $playerToken");
+    });
+  }
+
+  void showToast(var toastMsg){
+    Fluttertoast.showToast(
+        msg: toastMsg.toString(),
+        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
+        gravity: ToastGravity.BOTTOM,
+        toastLength: Toast.LENGTH_SHORT
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
 
     SystemChrome.setEnabledSystemUIOverlays([]);
     //player.setElementCards();
-    player.setCombinationCards();
+    //player.setPlayerData(playerName, playerId);
+//    player.setCombinationCards();
+    print("PLayer names : " + playersNames);
+    print("Once");
+    currReaction.rightSideCards.values.forEach((card) {
+      if(card != null)
+      {
+        print("Right side: " + card.name);
+      }
+    });
+    currReaction.leftSideCards.values.forEach((card) {
+      if(card != null)
+      {
+        print("Left side: " + card.name);
+      }
+    });
 
-    currReaction.addReactant(0, ElementCard(name: "H2", group: "2A", period: 1));
-    currReaction.addReactant(1, ElementCard(name: "O2", group: "2A", period: 1));
-    currReaction.addProduct(0, ElementCard(name: "H2O", group: "2A", period: 2));
+//    currReaction.addReactant(0, ElementCard(name: "H2", group: "2A", period: 1));
+//    currReaction.addReactant(1, ElementCard(name: "O2", group: "2A", period: 1));
+//    currReaction.addProduct(0, ElementCard(name: "H2O", group: "2A", period: 2));
 
     //player.buildMenuReactions.value.add(reaction);
     //player.buildMenuReactions.value.add(reaction);
@@ -68,7 +346,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     List<Container> combinationCards = List<Container>();
 
     player.getElementCards().forEach( (e) => elementCards.add(e.drawDraggableElementCard(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)));
-    combinationCards.add(player.combinationCards.elementAt(0).draw(50, 50));
+//    combinationCards.add(player.compoundCards.elementAt(0).draw(50, 50));
 
     ListView getElementCards(int startingIndex) {
       return ListView(
@@ -184,7 +462,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                     Container(
                       height: mediaQueryHeight * 0.4,
                       width: mediaQueryWidth * 0.15,
-                      color: Colors.cyanAccent,
+                      child: RaisedButton(
+                        child: Center(child: Text("Deck")),
+                        onPressed: () async {
+                          await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken});
+                        },
+                      ),
                     ),
 
                     //Last Card
@@ -205,7 +488,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                                 content: Container(
                                   width: mediaQueryWidth * 0.8,
                                   height: mediaQueryHeight * 0.8,
-                                  decoration: BoxDecoration( //TODO: Make it responsible
+                                  decoration: BoxDecoration( //TODO: Make it responsive
                                       border: Border.all(
                                         width: mediaQueryHeight * 0.0025,
                                         color: Colors.black,
@@ -406,9 +689,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               player.getElementCards().forEach((card) => cards.add(card.drawDraggableCard(width * 0.1, height)));
               break;
             case (BuildMenuShowingCardsType.ReactionCards):
-              player.combinationCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));//TODO: combinationCards change name
+              player.compoundCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));
               break;
-            /*case (BuildMenuShowingCardsType.ElementCards):
+            /*case (BuildMenuShowingCardsType.AccelerationCards):
               break;*/
             default: print("Error, invalid type");
           }
@@ -427,6 +710,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       ),
     );
   }
+
+
 
   /*Column createBuildMenuContent(double width, double height) {
     List<Widget> buildMenuReactions = new List<Widget>();
@@ -610,16 +895,36 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     return IconButton(
       icon: Icon(Icons.check),
       color: Colors.green,
-      onPressed: () {
-        //check if reaction is correct
-        //true: reaction.clear(), add bonus points to the player and show a toast for correct reaction
-        //false: show a message which report that the reaction is incorrect
-        Fluttertoast.showToast(
-          msg: "Incorrect reaction",
-          timeInSecForIos: 1,
-          gravity: ToastGravity.BOTTOM,
-          toastLength: Toast.LENGTH_SHORT
-        );
+      onPressed: () async {
+
+        List<Map<String, String>> leftCards = new List<Map<String, String>>();
+        List<Map<String, String>> rightCards = new List<Map<String, String>>();
+
+        currReaction.leftSideCards.values.forEach((card) {
+          if(card != null)
+          {
+            leftCards.add({"name": card.name, "uuid": card.uuid});
+          }
+        });
+
+        currReaction.rightSideCards.values.forEach((card) {
+          if(card != null)
+          {
+            rightCards.add({"name": card.name, "uuid": card.uuid});
+          }
+        });
+
+        print("Left cards: " + leftCards.toString());
+        print("Right cards: " + rightCards.toString());
+
+        var dataToSend = {
+          "playerId": playerId,
+          "playerToken": playerToken,
+          "leftSideCards": leftCards,
+          "rightSideCards": rightCards
+        };
+        showToast("wait..."); //TODO: the msg can be changed
+        await callCompleteReaction(dataToSend);
       },
     );
   }
@@ -651,15 +956,27 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   Widget drawLastCardDragTarget(double width, double height) {
     return DragTarget<ElementCard>(
       builder: (BuildContext context, List<card> incoming, rejected) {
-        return lastCard.draw(width, height);
+        return lastCardData.draw(width, height);
       },
 
-      onWillAccept: (data) => data.group == lastCard.group || data.period == lastCard.period,
+      onWillAccept: (data) => (data.group == lastCardData.group || data.period == lastCardData.period) && playerId == playerOnTurn,
 
-      onAccept: (data) {
-        setState(() {
-          lastCard = data;
-        });
+      onAccept: (data)
+      async {
+        showToast("wait");
+        cardToRemove = data;
+        var dataToSend = {
+          "cardUuid": data.uuid,
+          "playerId": playerId,
+          "roomId": roomId,
+          "playerToken": playerToken,
+        };
+
+        dataToSend["cardName"] = data.name;
+
+        print("Place card: " + data.uuid + " : " + data.name);
+
+        await callPlaceCard.call(dataToSend);
       },
 
       onLeave: (data) {

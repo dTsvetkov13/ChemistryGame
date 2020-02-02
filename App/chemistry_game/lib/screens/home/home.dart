@@ -29,12 +29,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = 0;
 
-  static List<Widget> _widgetOptions = <Widget>[
-    MainScreen(),
-    ProfileScreen(),
-    FriendsScreen(),
-    RankingScreen()
-  ];
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -56,12 +51,17 @@ class HomeScreenState extends State<HomeScreen> {
     print("Third user");
     print(user.uid);
 
+    List<Widget> _widgetOptions = <Widget>[
+      MainScreen(userId: user.uid),
+      ProfileScreen(),
+      FriendsScreen(),
+      RankingScreen()
+    ];
 
 
     //UserData userData = DatabaseService(user.uid).userDataFromSnapshot();
 
     return Scaffold(
-      appBar: AppBar(),
       endDrawer: Drawer(
         child: ListView(
           children: <Widget>[
@@ -119,16 +119,27 @@ class HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: Stack(
-        children: <Widget> [
-          HomeBackground(),
-          ElementComet(name: "H2"),
-          Center(
-
-            child: _widgetOptions.elementAt(_selectedIndex),
-
-          ),
-      ]
+      body: Builder(
+        builder: (context) =>  Stack(
+          children: <Widget> [
+            HomeBackground(),
+            ElementComet(name: "H2"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.menu),
+                  onPressed: () {
+                    Scaffold.of(context).openEndDrawer();
+                  },
+                )
+              ],
+            ),
+            Center(
+              child: _widgetOptions.elementAt(_selectedIndex),
+            ),
+        ]
+        ),
       ),
     );
 

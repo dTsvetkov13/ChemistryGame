@@ -3,12 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
 class ElementCard extends card{
-  //TODO: add id - uuid
-  final String name;
-  final String group;
-  final int period;
+//  TODO: add id - uuid
+  String name;
+  String group;
+  int period;
 
-  ElementCard({this.name, this.group, this.period});
+  ElementCard({this.name, this.group, this.period}) {
+    //TODO: check name for H, 0, I, etc... and change them to H2, etc
+  }
+
+  ElementCard.fromString(String data){
+    var splitted = data.split(",");
+    this.uuid = splitted[0];
+    this.name = splitted[1];
+    this.group = splitted[2];
+    this.period = int.parse(splitted[3]);
+  }
 
   Container draw(double width, double height) {
     return Container(
@@ -60,7 +70,7 @@ class ElementCard extends card{
 
   Draggable drawDraggableElementCard(double width, double height) {
     return Draggable<ElementCard>(
-      data: ElementCard(name: name, group: group, period: period),
+      data: this,
       child: this != null ? this.draw(width, height) : Container(
         width: width,
         height: height,
@@ -84,7 +94,7 @@ class ElementCard extends card{
 
   Draggable drawDraggableCard(double width, double height) {
     return Draggable<card>(
-      data: ElementCard(name: name, group: group, period: period),
+      data: this,
       child: this != null ? this.draw(width, height) : Container(
         width: width,
         height: height,

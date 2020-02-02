@@ -48,17 +48,17 @@ class Reaction {
 
   Reaction();
 
-  void addProduct(int index, card card) {
+  /*void addProduct(card card) {
     //TODO: Validation
     rightSideCards[card.uuid] = card;
     //rightSideCards[index] = elementCard;
   }
 
-  void addReactant(int index, card card) {
+  void addReactant(card card) {
     //TODO: Validation
     //leftSideCards[index] = elementCard;
     leftSideCards[card.uuid] = card;
-  }
+  }*/
 
   Widget draw(double width, double height) {
     return Container(
@@ -137,7 +137,8 @@ class Reaction {
       child: IconButton(
         icon: Icon(Icons.add),
         onPressed: () {
-          leftSideCards[new Uuid()] = null;
+          var newId = new Uuid();
+          leftSideCards[newId] = null;
           updated.value = !updated.value;
         },
       ),
@@ -179,7 +180,8 @@ class Reaction {
       child: IconButton(
         icon: Icon(Icons.add),
         onPressed: () {
-          rightSideCards[new Uuid()] = null;
+          var newId = new Uuid();
+          rightSideCards[newId] = null;
           updated.value = !updated.value;
         },
       ),
