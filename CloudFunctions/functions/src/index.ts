@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
-//import {UUID} from '../node_modules/uuid-generator-ts';
+// import {UUID} from '../node_modules/uuid-generator-ts';
+const uuidv4 = require('uuid/v4');
 import * as admin from 'firebase-admin';
 // import { DataSnapshot } from 'firebase-functions/lib/providers/database';
 //import { DataSnapshot } from 'firebase-functions/lib/providers/database';
@@ -56,20 +57,20 @@ export const updateUser = functions.https.onCall(async (data, context) => {
 	return "Successful";
 })
 
-export const createRoom = functions.https.onCall(async (data, context) => {
+// export const createRoom = functions.https.onCall(async (data, context) => {
+async function createRoom(data: any) {
 	const gameType = data.gameType ? data.gameType.toString() : "SingleGame"; //improve here
 
-	//const roomId = new UUID().getDashFreeUUID();
+	// const roomId = new UUID().getDashFreeUUID();
+	// const roomId = uuidv4();
 
-	const roomId = data.roomId; //TODO : create UUID
+	// const roomId = data.roomId; //TODO : create UUID
+	const roomId = await uuidv4();
 
 	const roomRef = admin.firestore().collection("rooms").doc(roomId.toString());
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId.toString());
-	const roomTurnDataRef = admin.firestore().collection("roomsTurnData").doc(roomId.toString());
 
 	await roomRef.set({"gameType": gameType});
-	await roomTurnDataRef.set({"finishedPlayers": 0});
-	await roomTurnDataRef.update({"finishedTurnPlayer": 5});
 
 	console.log("Got Data");
 
@@ -140,6 +141,70 @@ export const createRoom = functions.https.onCall(async (data, context) => {
 	}
 
 	return "Created Room";
+};
+
+export const addValue = functions.https.onCall(async (data, context) => {
+	const name = data.name;
+	const uuid = await uuidv4();
+
+	const playerRef = admin.firestore().collection("players").doc("48");
+
+	console.log((await playerRef.get()).get("cards").length);
+	
+	await playerRef.update({"cards": admin.firestore.FieldValue.arrayUnion({name: name, uuid: uuid})});
+
+	console.log((await playerRef.get()).get("cards").length);
+})
+
+async function addNewElementCard(name: string, playerId: string)
+{
+	const uuid = await uuidv4();
+
+	await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion({name: name, uuid: uuid})});
+
+	return {name: name, uuid: uuid};
+}
+
+async function addNewCompoundCard(name: string, playerId: string)
+{
+	const uuid = await uuidv4();
+
+	await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayUnion({name: name, uuid: uuid})});
+
+	return {name: name, uuid: uuid};
+}
+
+/*async function removeElementCardFromPlayer(name: string, uuid: string, playerId: string)
+{
+	await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayRemove({name: name, uuid: uuid})});
+}
+
+async function removeCompoundCardFromPlayer(name: string, uuid: string, playerId: string)
+{
+	await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayRemove({name: name, uuid: uuid})});
+}*/
+
+
+export const getValue = functions.https.onCall(async (data, context) => {
+	//const name = data.name;
+	//const uuid = data.uuid;
+
+	const card = (await admin.firestore().collection("players").doc("48").get()).get("cards")[0];
+
+	console.log(card.Name + " + ID : " + card.Uuid);
+})
+
+export const deleteValue = functions.https.onCall(async (data, context) => {
+	const name = data.name;
+	const uuid = data.uuid;
+
+	const playerRef = admin.firestore().collection("players").doc("48");
+
+	console.log((await playerRef.get()).get("cards").length);
+	
+	await playerRef.update({"cards": admin.firestore.FieldValue.arrayRemove({Name: name, Uuid: uuid})});
+
+	console.log((await playerRef.get()).get("cards").length);
 })
 
 exports.listenersToRoomFreeSeats = functions.firestore
@@ -152,17 +217,17 @@ exports.listenersToRoomFreeSeats = functions.firestore
 		if(freeSeats === 0)
 		{
 
-			await delay(6000);
+			//await delay(6000);
 
 			//Start game
 			//Send to the topic StartMessage
 			
 
 			//Set the nextTurn
-			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": 0});
+			
 			//TODO: update nextTurn again to 0;
 
-			await delay(6000);
+			//await delay(6000);
 
 			const playersNames = await configurePlayers({roomId: change.after.id});
 			await dealing({roomId: change.after.id});		
@@ -170,11 +235,9 @@ exports.listenersToRoomFreeSeats = functions.firestore
 			const lastCard = await (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("lastCard");
 			let lastCardData = "";
 
-			await admin.firestore().collection("elementCards").doc(lastCard).get().then(async (doc : any) => {
-				if(doc.exists) {
-					lastCardData += lastCard + "," + doc.data().group + "," + doc.data().period;
-				}
-			});
+			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": true});
+
+			lastCardData = await getCardData(lastCard);
 			
 
 			var startMsg = {
@@ -190,7 +253,16 @@ exports.listenersToRoomFreeSeats = functions.firestore
 			}
 
 			await admin.messaging().sendToTopic(change.after.id.toString(), startMsg);
+
+			const roomTurnDataRef = admin.firestore().collection("roomsTurnData").doc(change.after.id.toString());
+
 			
+			await roomTurnDataRef.set({"finishedPlayers": 2});
+			await roomTurnDataRef.update({"nextTurn": -1});
+			await roomTurnDataRef.update({"finishedTurnPlayer": 5});
+			await roomTurnDataRef.update({"readyPlayers": 0}); //Change to 0;
+			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": false});
+			await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(-1)}); //TODO: change to -2
 
 			console.log("Start the Game");
 		}
@@ -207,33 +279,34 @@ export const getPlayerCards = functions.https.onCall(async (data, context) => {
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
 
-	const elementCardsCount = (await playerRef.get()).get("elementCardsCount");
-	const compoundCardsCount = (await playerRef.get()).get("compoundCardsCount");
+	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
+	const compoundCardsCount = (await playerRef.get()).get("compoundCards").length;
 	const playerName = (await playerRef.get()).get("name");
 
-	let compoundCards = [];
+	let compoundCardsString = "";
 
-	let elementSymbolTemp = "";
+	let elementDataTemp = "";
 
 	let elementCardsString = "";
 
 	for(let i = 0; i < elementCardsCount; i++)
 	{
-		elementSymbolTemp = (await playerRef.get()).get("elementCards")[i];
-	
-		await admin.firestore().collection("elementCards").doc(elementSymbolTemp).get().then(async (doc : any) => {
-			console.log("DOC DATA : " + doc.data());
-			if(doc.exists)
-			{
-				elementCardsString += elementSymbolTemp + "," + doc.data().group + "," + doc.data().period + "\n";
-			}
-		});
+		elementDataTemp = (await playerRef.get()).get("elementCards")[i].name;
+		let elementCardId = (await playerRef.get()).get("elementCards")[i].uuid;
+
+		elementCardsString += elementCardId.toString()+ "," + await getCardData((elementDataTemp)) + "\n";
 	}
+
+	let compoundCardTemp;
 
 	for(let i = 0; i < compoundCardsCount; i++)
 	{
-		compoundCards[i] = (await playerRef.get()).get("compoundCards")[i]; 
+		compoundCardTemp = (await playerRef.get()).get("compoundCards")[i]
+		compoundCardsString += compoundCardTemp.name + "," + compoundCardTemp.uuid + "\n"; 
 	}
+
+	// console.log("Element cards: " + elementCardsString);
+	// console.log("Compound cards: " + compoundCards.toString());
 
 	var playerCards = {
 		"notification": {
@@ -241,18 +314,76 @@ export const getPlayerCards = functions.https.onCall(async (data, context) => {
 		},
 		"data": {
 			"elementCards": elementCardsString,
-			"compoundCards": compoundCards.toString(),
+			"compoundCards": compoundCardsString,
 			"playerName": playerName,
 		}
 	};
 
 	console.log("Player id: " + playerId);
 	console.log("Element cards: " + elementCardsString);
-	console.log("Compound Cards : " + compoundCards);
+	console.log("Compound Cards : " + compoundCardsString);
 
 	await admin.messaging().sendToDevice(playerToken, playerCards);
 })
 
+async function getCardData(name: string)
+{
+	const cardRef = admin.firestore().collection("elementCards").doc(name);
+	let cardData = name;
+
+	await cardRef.get().then((doc: any) => {
+		if(doc.exists)
+		{
+			cardData += "," + doc.data().group + "," + doc.data().period;
+		}
+	})
+
+	return cardData;
+}
+
+export const getDeckCard = functions.https.onCall(async(data, context) => {
+	const playerId = data.playerId;
+	const roomId = data.roomId;
+	const playerToken = data.playerToken;
+
+	const playerOnTurnIndex = await (await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("nextTurn");
+
+	if(playerId === (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex])
+	{	
+		await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+		console.log("Player is on turn");
+		const roomsDataRef = admin.firestore().collection("roomsData").doc(roomId);
+		if(!((await roomsDataRef.get()).get("deck").length > 0))
+		{
+			//TODO: generate new Deck and shuffle it
+		}
+		
+		const cardToGiveName = (await roomsDataRef.get()).get("deck")[0];
+
+		const cardData = await addNewElementCard(cardToGiveName, playerId);
+
+		// await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(cardToGiveName)});
+		// await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
+		await roomsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardToGiveName)});
+		// await roomsDataRef.update({"deckCardsCount": admin.firestore.FieldValue.increment(-1)});
+
+		const cardToGiveData = cardData.uuid + "," + await getCardData(cardToGiveName);
+
+		var getDeckCardMsg = {
+			"notification": {
+				"title": "Receive Deck Card",
+				"body": "You successfully received a card from the deck"
+			},
+			"data": {
+				"cardToGiveData": cardToGiveData
+			}
+		};
+
+		await admin.messaging().sendToDevice(playerToken, getDeckCardMsg);
+	}
+})
+
+//TODO: Check if this functions is used
 export const getElementCardsData = functions.https.onCall(async (data, context) => {
 	const elementCardsRef = await admin.firestore().collection("elementCards");
 
@@ -272,6 +403,24 @@ export const getElementCardsData = functions.https.onCall(async (data, context) 
 	return cardsData;
 })
 
+export const readyPlayer = functions.https.onCall(async (data, context) => {
+	const roomId = data.roomId;
+
+	if(await (await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("readyPlayers") === 3)
+	{
+		let startMsg = {
+			"notification": {
+				"title": "Start",
+				"body": "Everyone is ready. Start!"
+			}
+		};
+
+		await admin.messaging().sendToTopic(roomId, startMsg);
+	}
+
+	await admin.firestore().collection("roomsTurnData").doc(roomId).update({"readyPlayers": admin.firestore.FieldValue.increment(1)});
+});
+
 //Listen to nextTurn, call nextTurn() and change the nextTurn
 
 exports.listenersToRoomTurnData = functions.firestore
@@ -282,6 +431,18 @@ exports.listenersToRoomTurnData = functions.firestore
 		const nextTurn = data !== undefined ? data.nextTurn : 10;
 
 		let requiredFinishedPlayers;
+
+		if(((await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("gameFinished")))
+		{
+			console.log("The game is already finished");
+			return;
+		}
+
+		if(await (await admin.firestore().collection("roomsTurnData").doc(change.after.id).get()).get("readyPlayers") < 4)
+		{
+			console.log("Not every player is ready!");
+			return;
+		}
 
 		switch (await (await admin.firestore().collection("rooms").doc(change.after.id).get()).get("gameType")) {
 			case "SingleGame":
@@ -297,22 +458,31 @@ exports.listenersToRoomTurnData = functions.firestore
 		if((await admin.firestore().collection("roomsTurnData").doc(change.after.id).get()).get("finishedPlayers") >= requiredFinishedPlayers)
 		{
 			//TODO: Send message that the game has finished
-			var gameFinishedMsg = {
+			/*var gameFinishedMsg = {
 				"notification": {
 					"title": "Game Finished",
 					"body": "The game has finished"
 				}
 			}
 
-			await admin.messaging().sendToTopic(change.after.id.toString(), gameFinishedMsg);
+			await admin.messaging().sendToTopic(change.after.id.toString(), gameFinishedMsg);*/
+			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": true});
+			await finishGame(change.after.id);
 
 			console.log("Game Finished");
 			return;
 		}
 
-		console.log(change.after.id);
+		// console.log(change.after.id);
 		
-		console.log((await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("deck")[0]);
+		if(nextTurn === -1)
+		{
+			await delay(15000);
+			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": admin.firestore.FieldValue.increment(1)});
+			return;
+		}
+
+		// console.log((await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("deck")[0]);
 
 		const dataBefore = change.before.data();
 
@@ -322,31 +492,141 @@ exports.listenersToRoomTurnData = functions.firestore
 
 		if(nextTurn !== 10 && nextTurnBefore !== 10 && nextTurnBefore !== nextTurn)
 		{
-			const player = data !== undefined ? (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("players")[nextTurn] : 10;
-
-			console.log("player : " + player);
+			const playerId = (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("players")[nextTurn];
+			const playerName = (await admin.firestore().collection("players").doc(playerId).get()).get("name");
+			console.log("player : " + playerId);
 
 			const nextTurnMsg = {
 				"notification" : {
 					"title": "Player Turn",
-					"body": player,
-				}	
+					"body": playerName + " is on turn!",
+				},
+				"data": {
+					"playerId": playerId
+				}
 			}
 	
 			await admin.messaging().sendToTopic(change.after.id.toString(), nextTurnMsg);
 
-			await playerTurn(player.toString(), change.after.id);
+			await playerTurn(playerId.toString(), change.after.id);
 
-			const nextPlayer = nextTurn === 3 ? 0 : 0;
+			const nextPlayer = nextTurn === 3 ? 0 : nextTurn + 1;
 
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": nextPlayer})
 			console.log("Next Turn :" + nextPlayer.toString());
 			
-			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update(
+			//TODO: delete this
+			/*await admin.firestore().collection("roomsTurnData").doc(change.after.id).update(
 				{"finishedPlayers": admin.firestore.FieldValue.increment(1)}
-			);
+			);*/
 		}
+	}
+);
+
+async function finishGame(roomId: string)
+{
+	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+	const finishedPlayersCount = 1;
+	var finishedPlayerIds = new Array<string>();
+	const playersCount = 4;
+
+	for(let i = 0; i < finishedPlayersCount; i++)
+	{
+		finishedPlayerIds.push(await (await roomDataRef.get()).get("finishedPlayerIds")[i]);
+		await admin.firestore().collection("players").doc(finishedPlayerIds[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
+	}
+
+	console.log("After adding points");
+
+	var playerData: {points: number; name: string; id: string}[] = new Array<{points: number; name: string; id: string}>();
+
+	for(let i = 0; i < playersCount; i++)
+	{
+		const playerId = await (await roomDataRef.get()).get("players")[i];
+		const playerRef = admin.firestore().collection("players").doc(playerId);
+		const playerName = (await playerRef.get()).get("name");
+		const playerPoints = (await playerRef.get()).get("points");
+		playerData.push({name: playerName, points: playerPoints, id: playerId})
+	}
+
+	console.log("After getting data: " + playerData);
+
+	var sortedPlayerData: {points: number; name: string; id: string}[] = playerData.sort((p1, p2) => {
+		console.log("Compare: " + p1.name + ": " + p1.points + " === " + p2.name + ": " + p2.points);
+		
+		if(p1.points > p2.points) return -1;
+		else if(p1.points < p2.points) return 1;
+		else
+		{
+			if(p1.id === finishedPlayerIds[0])
+			{
+				return -1;
+			}
+			else if(p2.id === finishedPlayerIds[0])
+			{
+				return 1;
+			}
+			else return 0;
+		}
+
 	});
+
+	console.log("Ranking");
+
+	for(let i = 0; i < playersCount; i++)
+	{
+		console.log(sortedPlayerData[i].name);
+	}
+
+	var gameFinishedMsg = {
+		"notification": {
+			"title": "Game Finished",
+			"body": "The game has finished"
+		},
+		"data": {
+			"firstPlace": sortedPlayerData[0].name + "," + sortedPlayerData[0].points.toString(),
+			"secondPlace": sortedPlayerData[1].name + "," + sortedPlayerData[1].points.toString(),
+			"thirdPlace": sortedPlayerData[2].name + "," + sortedPlayerData[2].points.toString(),
+			"fourthPlace": sortedPlayerData[3].name + "," + sortedPlayerData[3].points.toString(),
+		}
+	}
+
+	await admin.messaging().sendToTopic(roomId, gameFinishedMsg);
+	
+	const roomsDataRef = admin.firestore().collection("roomsData").doc(roomId)
+
+	for(let i = 0; i < (await roomsDataRef.get()).get("subscribedTokens").length; i++)
+	{
+		await admin.messaging().unsubscribeFromTopic(await (await roomsDataRef.get()).get("subscribedTokens")[i], roomId);
+	}
+
+	switch(await (await admin.firestore().collection("rooms").doc(roomId).get()).get("gameType"))
+	{
+		case("SingleGame"):
+			await admin.firestore().collection("users").doc(sortedPlayerData[0].id)
+				.update({"singleGameWins": admin.firestore.FieldValue.increment(1)});
+			break;
+		case("TeamGame"):
+			//TODO: create the team game
+			// await admin.firestore().collection("users").doc(sortedPlayerData[0].id)
+				// .update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+			break
+	}
+
+	for(let i = 0; i < await (await roomDataRef.get()).get("players").length; i++)
+	{
+		admin.firestore().collection("players").doc((await roomDataRef.get()).get("players")[i]).delete()
+		.then(function() {
+			console.log("Document successfully deleted!");
+		}).catch(function(error) {
+			console.error("Error removing document: ", error);
+		});
+	}
+
+	console.log("End");
+
+	//TODO: Delete the player docs
+}
 
 // export const updateRoom = functions.https.onCall(async (data, context) => {
 async function updateRoom(data: any, roomId : string) {
@@ -357,6 +637,12 @@ async function updateRoom(data: any, roomId : string) {
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
 	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);
 
+	const randomNumber = await uuidv4();
+	const second = await uuidv4();
+
+	console.log("First: " + randomNumber);
+	console.log("Second: " + second);
+ 
 	console.log("Before the gameType: " + roomId);
 
 	switch (gameType) {
@@ -375,7 +661,15 @@ async function updateRoom(data: any, roomId : string) {
 			}
 
 			await admin.messaging().sendToDevice(playerToken, joinRoomMsg);
-			
+			await admin.messaging().subscribeToTopic(playerToken, roomId.toString()).then(async function(response) {
+				console.log('Successfully subscribed to topic:', response);
+				await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(playerToken)});
+				//console.log('Successfully subscribed to topic:', response.errors[0].error);
+			})
+			.catch(function(error) {
+				console.log('Error subscribing to topic:', error);
+			});;
+
 			await roomRef.update({freeSeats : admin.firestore.FieldValue.increment(-1)});
 
 			console.log("After sending message");
@@ -444,6 +738,8 @@ export const findRoom = functions.https.onCall(async (data, context) => {
 	await appropriateRooms.get().then(function (querySnapshot) {
 		console.log("size : " + querySnapshot.size);
 		querySnapshot.forEach(async function(doc) {
+			if(foundRoom) return; 
+
 			console.log(doc.id + " + " + doc.data); //HERE FAIL
 			if(doc.data().gameType === gameType && !foundRoom)
 			{
@@ -468,7 +764,11 @@ export const findRoom = functions.https.onCall(async (data, context) => {
 
 	//Create a room;
 
-	if(!foundRoom) console.log("Create room");
+	if(!foundRoom)
+	{
+		console.log("Create room");	
+		await createRoom(data);
+	}
 
 	return "Successful";
 })
@@ -477,13 +777,13 @@ function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );
 }
 
-async function playerHasTheseCards(playerId: string, leftSideCards: Array<String>, rightSideCards: Array<String>)
+async function playerHasTheseCards(playerId: string, leftSideCards: any, rightSideCards: any)
 {
 	const playerRef = await admin.firestore().collection("players").doc(playerId);
 	const elementCards = (await playerRef.get()).get("elementCards");
-	const elementCardsCount = (await playerRef.get()).get("elementCardsCount");
+	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
 	const compoundCards = (await playerRef.get()).get("compoundCards");
-	const compoundCardsCount = (await playerRef.get()).get("compoundCardsCount");
+	const compoundCardsCount = (await playerRef.get()).get("compoundCards").length;
 
 	let matching = 0;
 
@@ -491,7 +791,8 @@ async function playerHasTheseCards(playerId: string, leftSideCards: Array<String
 	{
 		for(let j = 0; j < leftSideCards.length; j++)
 		{
-			if(leftSideCards[j] === elementCards[i])
+			console.log("Left card : " + leftSideCards[j]["name"] + " : " + elementCards[i].name);
+			if(leftSideCards[j]["name"] === elementCards[i].name && leftSideCards[j]["uuid"] === elementCards[i].uuid)
 			{
 				matching++;
 				continue;
@@ -500,7 +801,8 @@ async function playerHasTheseCards(playerId: string, leftSideCards: Array<String
 
 		for(let j = 0; j < rightSideCards.length; j++)
 		{
-			if(rightSideCards[j] === elementCards[i])
+			console.log("Right card : " + rightSideCards[j]["name"]);
+			if(rightSideCards[j]["name"] === elementCards[i].name && rightSideCards[j]["uuid"] === elementCards[i].uuid)
 			{
 				matching++;
 				continue;
@@ -512,7 +814,8 @@ async function playerHasTheseCards(playerId: string, leftSideCards: Array<String
 	{
 		for(let j = 0; j < leftSideCards.length; j++)
 		{
-			if(leftSideCards[j] === compoundCards[i])
+			console.log("Left card : " + leftSideCards[j]["name"] + " : " + compoundCards[i].name);
+			if(leftSideCards[j]["name"] === compoundCards[i].name && leftSideCards[j]["uuid"] === compoundCards[i].uuid)
 			{
 				matching++;
 				continue;
@@ -521,7 +824,8 @@ async function playerHasTheseCards(playerId: string, leftSideCards: Array<String
 
 		for(let j = 0; j < rightSideCards.length; j++)
 		{
-			if(rightSideCards[j] === compoundCards[i])
+			console.log("Right card : " + rightSideCards[j].values);
+			if(rightSideCards[j]["name"] === compoundCards[i].name && rightSideCards[j]["uuid"] === compoundCards[i].uuid)
 			{
 				matching++;
 				continue;
@@ -561,28 +865,42 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 		};
 
 		await admin.messaging().sendToDevice(playerToken, failedMsg);
+		return;
 	}
 
 	let leftSideString = "";
 
-	if(leftSideCards.length) leftSideString += leftSideCards[0];
+	if(leftSideCards.length === 0 || rightSideCards.length === 0)
+	{
+		var emptySideMsg = {
+			"notification": {
+				"title": "Empty Side",
+				"body": "One of the sides is empty"
+			}
+		};
 
-	//TODO: CHECK THE LENGHT OF The cards
+		console.log("Empty side");
+
+		await admin.messaging().sendToDevice(playerToken, emptySideMsg);
+		return;
+	}
+
+	leftSideString += leftSideCards[0].name;
 
 	for(let i = 1; i < leftSideCards.length; i++)
 	{
-		leftSideString += " + " + leftSideCards[i];
+		leftSideString += " + " + leftSideCards[i].name;
 	}
 
 	console.log("String : " + leftSideString);
 
 	let rightSideString = "";
 
-	if(rightSideCards.length) rightSideString += rightSideCards[0];
+	rightSideString += rightSideCards[0].name;
 
 	for(let i = 1; i < rightSideCards.length; i++)
 	{
-		rightSideString += " + " + rightSideCards[i];
+		rightSideString += " + " + rightSideCards[i].name;
 	}
 
 	console.log("String : " + rightSideString);
@@ -592,6 +910,7 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 		includepodid: 'ReactionList:ChemicalReactionData',
 		podstate: 'ReactionList:ChemicalReactionData__Show formulas',
 		format: 'plaintext',
+	// }).then(console.log);
 	}).then(async (queryresult: any) => {
 		if(queryresult.numpods !== 0)
 		{
@@ -610,6 +929,7 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 				};
 		
 				await admin.messaging().sendToDevice(playerToken, incorrectReactionMsg);
+				return;
 			}
 			else
 			{
@@ -635,7 +955,7 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 
 						for(let j = 1; j < leftSideCards.length; j++)
 						{
-							if(leftSideCards[j] === currReactant)
+							if(leftSideCards[j].name === currReactant)
 							{
 								console.log("There is it in the left side");
 								newCard = false;
@@ -644,7 +964,7 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 						
 						for(let j = 1; j < rightSideCards.length; j++)
 						{
-							if(rightSideCards[j] === currReactant)
+							if(rightSideCards[j].name === currReactant)
 							{
 								console.log("There is it in the right side");
 								newCard = false;
@@ -687,7 +1007,7 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 
 					//Check the newCard if it is compound or element
 
-					cardData = await addNewCardToPlayer(playerId, newCards);
+					cardData = await addNewCardToPlayer(playerId, newCards[0]);
 					console.log("Added new card");
 
 					var correctMsgWithData = {
@@ -701,8 +1021,10 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 					};
 
 					await admin.messaging().sendToDevice(playerToken, correctMsgWithData);
-					
+					//const roomId = (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
+					//await finishGame(roomId);
 					//TODO: maybe add bonus points
+					return;
 				}
 				else
 				{
@@ -715,12 +1037,15 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 					};
 			
 					await admin.messaging().sendToDevice(playerToken, fillMoreCardsMsg);
+					return;
 				}
 			}
 		}
 		else
 		{
 			console.log("Bonus points");
+
+			// console.log(queryresult.pods[1]);
 
 			var correctMsgWithoutData = {
 				"notification": {
@@ -737,9 +1062,18 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 
 			console.log("After deleting");
 
+			await admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
+			
+			if((await admin.firestore().collection("players").doc(playerId).get()).get("elementCards").length <= 0)
+			{
+				const roomId = await (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
+				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+				await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+			}
+
 			//remove the cards from the player
 			//add bonus points
-			await admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
+			
 		}
 	}).catch(console.error)
 	//If numpods is equel to 0, there is such a reaction
@@ -765,42 +1099,58 @@ async function addNewCardToPlayer(playerId: string, newCard: any)
 	}
 	else
 	{
-		await admin.firestore().collection("elementCards").doc(newCard.toString()).get().then(async (doc: any) => {
-			console.log("DOC DATA : " + doc.data());
-			if(doc.exists)
-			{
-				cardData += doc.data().symbol;
-				cardData += "," + doc.data().group + "," + doc.data().period;
-			}
-		});
+		// await admin.firestore().collection("elementCards").doc(newCard.toString()).get().then(async (doc: any) => {
+		// 	console.log("DOC DATA : " + doc.data());
+		// 	if(doc.exists)
+		// 	{
+		// 		cardData += doc.data().symbol;
+		// 		cardData += "," + doc.data().group + "," + doc.data().period;
+		// 	}
+		// });
+		cardData = await getCardData(newCard);
 	}
+
+	console.log("Card Data: " + cardData);
+
+	let newCardUuid;
 
 	if(upperCases >= 2)
 	{
-		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(newCard)});	
+		// await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(newCard.toString())});	
+		// await admin.firestore().collection("players").doc(playerId).update({"compoundCardsCount": admin.firestore.FieldValue.increment(1)});
+		const data = await addNewCompoundCard(newCard, playerId);
+		newCardUuid = data.uuid;
 	}
 	else
 	{
-		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(newCard)});
+		console.log("Element card");
+		// await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(newCard.toString())});
+		// await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
+		const data = await addNewElementCard(newCard, playerId);
+		newCardUuid = data.uuid;
 	}
+
+	console.log("Before return");
+
+	cardData = newCardUuid + "," + cardData;
 
 	return cardData;
 }
 
 async function deleteCardsFromPlayer(playerId: string, leftSideCards: any, rightSideCards: any)
 {
-	var upperCases = 0;
+	//var upperCases = 0;
 
 	for(let i = 0; i < leftSideCards.length; i++)
 	{
 		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayRemove(leftSideCards[i])})
 		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayRemove(leftSideCards[i])})
 		
-		upperCases = 0;
+		//upperCases = 0;
 
-		for(let j = 0; j < leftSideCards[i].length; j++)
+		/*for(let j = 0; j < leftSideCards[i].length; j++)
 		{
-			if(leftSideCards[i][j] === leftSideCards[i][j].toUpperCase())
+			if(leftSideCards[i][j] === leftSideCards[i][j].toUpperCase() && isNaN(Number(leftSideCards[i][j])))
 			{
 				upperCases++;
 			}
@@ -815,7 +1165,7 @@ async function deleteCardsFromPlayer(playerId: string, leftSideCards: any, right
 		else
 		{
 			await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
-		}
+		}*/
 	}
 
 	for(let i = 0; i < rightSideCards.length; i++)
@@ -823,11 +1173,11 @@ async function deleteCardsFromPlayer(playerId: string, leftSideCards: any, right
 		await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayRemove(rightSideCards[i])})
 		await admin.firestore().collection("players").doc(playerId).update({"compoundCards": admin.firestore.FieldValue.arrayRemove(rightSideCards[i])})
 		
-		upperCases = 0;
+		/*upperCases = 0;
 
 		for(let j = 0; j < rightSideCards[i].length; j++)
 		{
-			if(rightSideCards[i][j] === rightSideCards[i][j].toUpperCase())
+			if(rightSideCards[i][j] === rightSideCards[i][j].toUpperCase() && isNaN(Number(rightSideCards[i][j])))
 			{
 				upperCases++;
 			}
@@ -842,30 +1192,43 @@ async function deleteCardsFromPlayer(playerId: string, leftSideCards: any, right
 		else
 		{
 			await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
-		}
-	}
-
-	if((await admin.firestore().collection("players").doc(playerId).get()).get("elementCardsCount") <= 0)
-	{
-		const roomId = await (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
-		await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+		}*/
 	}
 }
 
 export const placeCard = functions.https.onCall(async (data, context) => {
+	
 	const playerId = data.playerId.toString();
 	const cardName = data.cardName;
+	const cardUuid = data.cardUuid;
 	const roomId = data.roomId.toString();
+	const playerToken = data.playerToken;
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const elementCardsCount = (await playerRef.get()).get("elementCardsCount");
+	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
 
 	//TODO: CHECK FIRST IF THE PLAYER IS ON TURN
 
+	const playerOnTurnIndex = await (await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("nextTurn");
+
+	if(!(playerId === await (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex]))
+	{
+		var notYourTurnMsg = {
+			"notification": {
+				"title": "Not Your Turn",
+				"body": "It is not your turn"
+			}
+		}
+
+		await admin.messaging().sendToDevice(playerToken, notYourTurnMsg);
+		return;
+	}
+
 	for(let i = 0; i < elementCardsCount; i++)
 	{
-		if((await playerRef.get()).get("elementCards")[i] === cardName)
+		if((await playerRef.get()).get("elementCards")[i].name === cardName 
+			&& (await playerRef.get()).get("elementCards")[i].uuid === cardUuid)
 		{
 			const elementCardsRef = await admin.firestore().collection("elementCards");
 			const lastCardRef = (await elementCardsRef.doc((await roomDataRef.get()).get("lastCard")));
@@ -876,17 +1239,33 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 			if(((await lastCardRef.get()).get("group") === (await currentCardRef.get()).get("group")) 
 				|| ((await lastCardRef.get()).get("period") === (await currentCardRef.get()).get("period")))
 			{
+				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+				
 				console.log("The group or the period coincide")
 				await roomDataRef.update({"lastCard": cardName});
-				await playerRef.update({"elementCards": admin.firestore.FieldValue.arrayRemove(cardName)});
-				await playerRef.update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
+				
+				await playerRef.update({"elementCards": admin.firestore.FieldValue.arrayRemove({name: cardName, uuid: cardUuid})});
+				// await playerRef.update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
 
-				if((await playerRef.get()).get("elementCardsCount") === 0)
+				if((await playerRef.get()).get("elementCards").length === 0)
 				{
 					await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+					await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
 				}
 
-				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+				const newLastCard = await getCardData(cardName);
+
+				var newLastCardMsg = {
+					"notification": {
+						"title": "New Last Card",
+						"body": "There is a new last card"
+					},
+					"data": {
+						"newLastCard": newLastCard
+					}
+				}
+
+				await admin.messaging().sendToTopic(roomId, newLastCardMsg);
 
 				//TODO: Send update player elementCards data;
 				var placedCardMsg = {
@@ -896,17 +1275,41 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 					}
 				};
 
-				await admin.messaging().sendToTopic(roomId, placedCardMsg);
+				await admin.messaging().sendToDevice(playerToken, placedCardMsg);
+
+				//await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+
+				
 
 				return true;
 			}
 			else
 			{
-				console.log("The group or the period do not coincide")
+				var cannnotPlaceCardMsg = {
+					"notification": {
+						"title": "Cannot Place Card",
+						"body": "This card do not match"
+					}
+				}
+
+				await admin.messaging().sendToDevice(playerToken, cannnotPlaceCardMsg);
+
+				console.log("The group and the period do not coincide")
 				return false;
 			}
 		}
 	}
+
+	var incorrectCardMsg = {
+		"notification": {
+			"title": "Incorrect card",
+			"body": "You do not have this card"
+		}
+	}
+
+	await admin.messaging().sendToDevice(playerToken, incorrectCardMsg);
+
+	//TODO: Send msg that the player does not have the card
 
 	console.log("End of the function");
 	return false;
@@ -978,43 +1381,56 @@ exports.callWolframApi = functions.https.onCall(async (data, context) => {
 })
 
 async function playerTurn(playerId : string, roomId : string) {
-	const seconds = 5;
+	const seconds = 15;
 
 	const roomTurnDataRef = admin.firestore().collection("roomsTurnData").doc(roomId);
+	const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
+	const playerOnTurn = await (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex];
 
 	for(let i = 0; i < seconds; i++)
 	{
 		await delay(1000);
 		console.log("Sec : " + [i+1]);
 
-		if((await roomTurnDataRef.get()).get("finishedTurnPlayer") === await (await roomTurnDataRef.get()).get("nextTurn"))
+		if((await roomTurnDataRef.get()).get("finishedTurnPlayer") === playerOnTurn)
 		{
 			console.log("Player has made his move");
 			return;
 		}
 	}
-	
-	var missedTurnMsg = {
-		"notification": {
-			"title": "Missed Turn",
-			"body": "You have missed your turn"
-		}
-	}
-
-	await admin.messaging().sendToDevice(await (await admin.firestore().collection("players").doc(playerId).get()).get("roomId"), missedTurnMsg);
 
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
 
 	const cardFromDeck = await (await roomDataRef.get()).get("deck")[0];
 	await roomDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardFromDeck)});
-	await roomDataRef.update({"deckCardsCount": admin.firestore.FieldValue.increment(-1)});
-	await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(cardFromDeck)});
-	await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
+	// await roomDataRef.update({"deckCardsCount": admin.firestore.FieldValue.increment(-1)});
+	// await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(cardFromDeck)});
+	// await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
+	const cardData = await addNewElementCard(cardFromDeck, playerId);
+
+	const cardToAddData = cardData.uuid + "," + await getCardData(cardFromDeck);
+	const playerName = await (await admin.firestore().collection("players").doc(playerId).get()).get("name");
+
+	var missedTurnMsg = {
+		"notification": {
+			"title": "Missed Turn",
+			"body": playerName + " have missed their turn"
+		},
+		"data": {
+			"playerId": playerId, //TODO: find a solution to sendToDevice and to delete this line
+			"cardToAdd": cardToAddData.toString()
+		}
+	}
+
+	await admin.messaging().sendToTopic(roomId, missedTurnMsg);
+	await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
 
 	return;
 }
 
 export const startGame = functions.https.onCall(async(data, context) => {
+	//await playerHasTheseCards("", [""], []);
+	
 	const roomId = data.roomId.toString();
 	console.log("Room Id : " + roomId)
 	const gameType = data.gameType;
@@ -1097,7 +1513,7 @@ async function configurePlayers (data : any) {
 
 	for(let i = 0; i < playersCount; i++)
 	{
-		const playerId = (await roomDataRef.get()).get("players")[i.toString()];
+		const playerId = (await roomDataRef.get()).get("players")[i];
 		await playersRef.doc(playerId.toString()).set({"name": (await usersRef.doc(playerId.toString()).get()).get("username")});
 		await playersRef.doc(playerId.toString()).update({"roomId": roomId});
 		await playersRef.doc(playerId.toString()).update({"points": 0});
@@ -1120,13 +1536,13 @@ async function configurePlayers (data : any) {
 async function dealing (data: any) {
 	const roomId = data.roomId.toString();
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const playersRef = admin.firestore().collection("players");
+	// const playersRef = admin.firestore().collection("players");
 	const playerIds = [];
-	const elementCardsToDeal = 2;
+	const elementCardsToDeal = 1;
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "B", "Na", "Al", "Be"]; //TODO: get them from somewhere
+	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "H2", "B", "Na", "H2", "H2", "H2", "H2", "Al", "Be"]; //TODO: get them from somewhere
 	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "NaCl", "NaCl", "NaCl", "NaCl", "NaCl"]; //TODO: get them from somewhere
 
 	for(let i = 0; i < playersCount; i++)
@@ -1138,8 +1554,8 @@ async function dealing (data: any) {
 
 	for(let i = 0; i < playersCount * elementCardsToDeal; i++)
 	{
-		await playersRef.doc(playerIds[playerIndex]).update({"elementCards": admin.firestore.FieldValue.arrayUnion(elementCards[i])});
-		
+		// await playersRef.doc(playerIds[playerIndex]).update({"elementCards": admin.firestore.FieldValue.arrayUnion(elementCards[i])});
+		await addNewElementCard(elementCards[i], playerIds[playerIndex]);
 
 		console.log("Cards added");
 
@@ -1147,9 +1563,12 @@ async function dealing (data: any) {
 		else playerIndex++;
 	}
 
+	playerIndex = 0;
+
 	for(let i = 0; i < playersCount * compoundCardsToDeal; i++)
 	{
-		await playersRef.doc(playerIds[playerIndex]).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(compoundCards[i])});
+		// await playersRef.doc(playerIds[playerIndex]).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(compoundCards[i])});
+		await addNewCompoundCard(compoundCards[i], playerIds[playerIndex]);
 
 		if(playerIndex === 3) playerIndex = 0;
 		else playerIndex++;
@@ -1160,13 +1579,13 @@ async function dealing (data: any) {
 	await elementCards.splice(0, playersCount * elementCardsToDeal + 1);
 	
 	await roomDataRef.update({"deck": elementCards});
-	await roomDataRef.update({"deckCardsCount": elementCards.length});
+	// await roomDataRef.update({"deckCardsCount": elementCards.length});
 
-	for(let i = 0; i < playersCount; i++)
-	{
-		await playersRef.doc(playerIds[i]).update({"elementCardsCount": elementCardsToDeal});
-		await playersRef.doc(playerIds[i]).update({"compoundCardsCount": compoundCardsToDeal});
-	}
+	// for(let i = 0; i < playersCount; i++)
+	// {
+	// 	await playersRef.doc(playerIds[i]).update({"elementCardsCount": elementCardsToDeal});
+	// 	await playersRef.doc(playerIds[i]).update({"compoundCardsCount": compoundCardsToDeal});
+	// }
 
 	return "Successfully dealing";
 }
