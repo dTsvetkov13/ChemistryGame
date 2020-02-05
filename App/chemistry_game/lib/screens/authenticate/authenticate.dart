@@ -1,4 +1,5 @@
 import 'package:chemistry_game/services/auth.dart';
+import 'package:chemistry_game/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'login_screen.dart';
@@ -25,7 +26,7 @@ class AuthenticateState extends State<Authenticate> {
 
   String email = '';
   String password = '';
-  String error = '';
+  var error = new ValueNotifier<String>("");
   String username = '';
 
   TextEditingController emailController = TextEditingController();
@@ -44,9 +45,6 @@ class AuthenticateState extends State<Authenticate> {
     final buttonHeight = mediaQueryData.size.height * 0.06;
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Registration Form"),
-        ),
         body: Center(
           child: Container(
             width: width * 0.4,
@@ -56,6 +54,13 @@ class AuthenticateState extends State<Authenticate> {
                 child: ListView(
                   scrollDirection: Axis.vertical,
                   children: <Widget> [
+                    ValueListenableBuilder(
+                      valueListenable: error,
+                      child: Text(error.value),
+                      builder: (BuildContext context, String value , Widget child) {
+                        return Text(error.value);
+                      }
+                    ),
                     loginStateChangeButton(buttonWidth, buttonHeight),
                     loginArea(width * 0.4, height * 0.35),
                     registerStateChangeButton(buttonWidth, buttonHeight),
@@ -171,7 +176,7 @@ class AuthenticateState extends State<Authenticate> {
                   if(result == null) {
                     setState(() {
                       //loading = false;
-                      error = 'Could not sign in with those credentials';
+                      error.value = 'Could not sign in with those credentials';
                     });
                   } else {
                     print(result);
@@ -216,111 +221,109 @@ class AuthenticateState extends State<Authenticate> {
 
   Form registerForm(double height) {
     return Form(
-        key: _registerFormKey,
-        child: Container(
-          height: height,
-          child: ListView(
-              scrollDirection: Axis.vertical,
-              children: <Widget>[
-                TextFormField(
-                  keyboardType: TextInputType.text,
-                  controller: usernameController,
-                  validator: (val) => val.isEmpty ? 'Enter an username' : null,
-                  onChanged: (val) {
-                    setState(() {
-                      username = val;
-                    });
-                  },
+      key: _registerFormKey,
+      child: Container(
+        height: height,
+        child: ListView(
+          scrollDirection: Axis.vertical,
+          children: <Widget>[
+            TextFormField(
+              keyboardType: TextInputType.text,
+              controller: usernameController,
+              validator: (val) => val.isEmpty ? 'Enter an username' : null,
+              onChanged: (val) {
+                setState(() {
+                  username = val;
+                });
+              },
 
-                  decoration: InputDecoration(
-                      labelText: "Username",
-                      hintText: "Please enter your username",
-                      errorStyle: TextStyle(
-                          color: Colors.yellowAccent,
-                          fontSize: 15.0
-                      ),
-
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(5.0),
-                      )
+              decoration: InputDecoration(
+                  labelText: "Username",
+                  hintText: "Please enter your username",
+                  errorStyle: TextStyle(
+                      color: Colors.yellowAccent,
+                      fontSize: 15.0
                   ),
-                ),
-                TextFormField(
-                  keyboardType: TextInputType.emailAddress,
-                  controller: usernameController,
-                  validator: (val) => val.isEmpty ? 'Enter an email' : null,
-                  onChanged: (val) {
-                    setState(() {
-                      email = val;
-                    });
-                  },
 
-                  decoration: InputDecoration(
-                      labelText: "Email",
-                      hintText: "Please enter your email",
-                      errorStyle: TextStyle(
-                          color: Colors.yellowAccent,
-                          fontSize: 15.0
-                      ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5.0),
+                  )
+              ),
+            ),
+            TextFormField(
+              keyboardType: TextInputType.emailAddress,
+              controller: emailController,
+              validator: (val) => val.isEmpty ? 'Enter an email' : null,
+              onChanged: (val) {
+                setState(() {
+                  email = val;
+                });
+              },
 
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(5.0),
-                      )
+              decoration: InputDecoration(
+                  labelText: "Email",
+                  hintText: "Please enter your email",
+                  errorStyle: TextStyle(
+                      color: Colors.yellowAccent,
+                      fontSize: 15.0
                   ),
-                ),
-                TextFormField(
-                  keyboardType: TextInputType.text,
-                  controller: passwordController,
-                  obscureText: true,
-                  validator: (val) => val.length < 6 ? 'Please enter a password longer than 6 chars' : null,
 
-                  onChanged: (val) {
-                    setState(() {
-                      password = val;
-                    });
-                  },
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5.0),
+                  )
+              ),
+            ),
+            TextFormField(
+              keyboardType: TextInputType.text,
+              controller: passwordController,
+              obscureText: true,
+              validator: (val) => val.length < 6 ? 'Please enter a password longer than 6 chars' : null,
 
-                  decoration: InputDecoration(
-                      labelText: "Password",
-                      hintText: "Please enter your password",
-                      errorStyle: TextStyle(
-                          color: Colors.yellowAccent,
-                          fontSize: 15.0
-                      ),
+              onChanged: (val) {
+                setState(() {
+                  password = val;
+                });
+              },
 
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(5.0),
-                      )
+              decoration: InputDecoration(
+                  labelText: "Password",
+                  hintText: "Please enter your password",
+                  errorStyle: TextStyle(
+                      color: Colors.yellowAccent,
+                      fontSize: 15.0
                   ),
+
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5.0),
+                  )
+              ),
+            ),
+            RaisedButton(
+                child: Text(
+                  'Register',
+                  textScaleFactor: 1.5,
                 ),
-                RaisedButton(
-                    child: Text(
-                      'Register',
-                      textScaleFactor: 1.5,
-                    ),
 
-                    onPressed: () async {
-                      if(_registerFormKey.currentState.validate()){
-                        //setState(() => loading = true);
-                        dynamic result = await _auth.registerWithEmailAndPassword(email, password);
-
-                        if(result == null) {
-                          setState(() {
-                            //loading = false;
-                            error = 'Could not sign in with those credentials';
-                          });
-                        } else {
-                          print(result.uid);
-                          //DatabaseService(result.uid).configureUser(username);
-                          Navigator.pop(context);
-                        }
-
-                      }
+                onPressed: () async {
+                  if(_registerFormKey.currentState.validate()){
+                    //setState(() => loading = true);
+                    dynamic result = await _auth.registerWithEmailAndPassword(email, password);
+                    if(result == null) {
+                      setState(() {
+                        //loading = false;
+                        error.value = 'Could not register with those credentials';
+                      });
+                    } else {
+                      print(result.uid);
+                      DatabaseService(result.uid).configureUser(username);
+                      Navigator.pop(context);
                     }
-                )
-              ]
-          ),
-        )
+                  }
+                }
+            )
+          ]
+        ),
+      )
     );
   }
 
@@ -336,10 +339,7 @@ class AuthenticateState extends State<Authenticate> {
             //padding: EdgeInsets.only(right: mediaQueryData.size.width/3, bottom: mediaQueryData.size.height/5),
             onPressed: () {
               print("Information pressed");
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()) //TODO: Change the state of the AnimatedFade
-              );
+              //TODO: Change the state of the AnimatedFade
             }
         ),
       ),
