@@ -346,26 +346,32 @@ export const getDeckCard = functions.https.onCall(async(data, context) => {
 	const roomId = data.roomId;
 	const playerToken = data.playerToken;
 
-	const playerOnTurnIndex = await (await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("nextTurn");
+	const roomsTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
+	const playerOnTurnIndex = await (await roomsTurnDataRef.get()).get("nextTurn");
+	const roomsData = await admin.firestore().collection("roomsData").doc(roomId).get();
 
-	if(playerId === (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex])
+	if(playerId === (await roomsData.get("players")[playerOnTurnIndex]))
 	{	
-		await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+		await roomsTurnDataRef.update({"finishedTurnPlayer": playerId});
 		console.log("Player is on turn");
 		const roomsDataRef = admin.firestore().collection("roomsData").doc(roomId);
-		if(!((await roomsDataRef.get()).get("deck").length > 0))
-		{
-			//TODO: generate new Deck and shuffle it
-		}
 		
-		const cardToGiveName = (await roomsDataRef.get()).get("deck")[0];
+		let cardToGiveName;
+
+		if(!(await roomsData.get("deck").length > 0))
+		{
+			const deck = await generateNewDeck();
+			cardToGiveName = deck[0];
+			await roomsDataRef.update({"deck": deck});
+		}
+		else
+		{
+			cardToGiveName = await (roomsData).get("deck")[0];
+		}
 
 		const cardData = await addNewElementCard(cardToGiveName, playerId);
 
-		// await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(cardToGiveName)});
-		// await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
 		await roomsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardToGiveName)});
-		// await roomsDataRef.update({"deckCardsCount": admin.firestore.FieldValue.increment(-1)});
 
 		const cardToGiveData = cardData.uuid + "," + await getCardData(cardToGiveName);
 
@@ -477,7 +483,6 @@ exports.listenersToRoomTurnData = functions.firestore
 		
 		if(nextTurn === -1)
 		{
-			await delay(15000);
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": admin.firestore.FieldValue.increment(1)});
 			return;
 		}
@@ -513,7 +518,7 @@ exports.listenersToRoomTurnData = functions.firestore
 			const nextPlayer = nextTurn === 3 ? 0 : nextTurn + 1;
 
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": nextPlayer})
-			console.log("Next Turn :" + nextPlayer.toString());
+			console.log("Next Turn : " + nextPlayer.toString());
 			
 			//TODO: delete this
 			/*await admin.firestore().collection("roomsTurnData").doc(change.after.id).update(
@@ -627,6 +632,30 @@ async function finishGame(roomId: string)
 
 	//TODO: Delete the player docs
 }
+
+export const getProfileData = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+	const userToken = data.userToken;
+
+	const userRef = admin.firestore().collection("users").doc(userId);
+
+	const userName = (await userRef.get()).get("username");
+	const singleGameWins = (await userRef.get()).get("singleGameWins");
+	const teamGameWins = (await userRef.get()).get("teamGameWins");
+
+	var profileData = {
+		"notification": {
+			"title": "Profile Data"
+		},
+		"data": {
+			"userName": userName,
+			"singleGameWins": singleGameWins.toString(),
+			"teamGameWins": teamGameWins.toString()
+		}
+	}
+
+	await admin.messaging().sendToDevice(userToken, profileData);
+});
 
 // export const updateRoom = functions.https.onCall(async (data, context) => {
 async function updateRoom(data: any, roomId : string) {
@@ -1206,13 +1235,14 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
+	const playerData = await playerRef.get();
+	const elementCardsCount = playerData.get("elementCards").length;
+	const roomData = await roomDataRef.get();
+	const roomTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
 
-	//TODO: CHECK FIRST IF THE PLAYER IS ON TURN
+	const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
 
-	const playerOnTurnIndex = await (await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("nextTurn");
-
-	if(!(playerId === await (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex]))
+	if(!(playerId === await roomData.get("players")[playerOnTurnIndex]))
 	{
 		var notYourTurnMsg = {
 			"notification": {
@@ -1231,15 +1261,15 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 			&& (await playerRef.get()).get("elementCards")[i].uuid === cardUuid)
 		{
 			const elementCardsRef = await admin.firestore().collection("elementCards");
-			const lastCardRef = (await elementCardsRef.doc((await roomDataRef.get()).get("lastCard")));
-			const currentCardRef = (await elementCardsRef.doc(cardName));
+			const lastCardData = await (await elementCardsRef.doc((await roomDataRef.get()).get("lastCard"))).get();
+			const currentCardData = await (await elementCardsRef.doc(cardName)).get();
 			
 			console.log("Player has the card");
 
-			if(((await lastCardRef.get()).get("group") === (await currentCardRef.get()).get("group")) 
-				|| ((await lastCardRef.get()).get("period") === (await currentCardRef.get()).get("period")))
+			if((lastCardData.get("group") === currentCardData.get("group")) 
+				|| (lastCardData.get("period") === currentCardData.get("period")))
 			{
-				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
+				await roomTurnDataRef.update({"finishedTurnPlayer": playerId});
 				
 				console.log("The group or the period coincide")
 				await roomDataRef.update({"lastCard": cardName});
@@ -1249,8 +1279,8 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 
 				if((await playerRef.get()).get("elementCards").length === 0)
 				{
-					await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
-					await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+					await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+					await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
 				}
 
 				const newLastCard = await getCardData(cardName);
@@ -1278,8 +1308,6 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 				await admin.messaging().sendToDevice(playerToken, placedCardMsg);
 
 				//await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
-
-				
 
 				return true;
 			}
@@ -1380,11 +1408,39 @@ exports.callWolframApi = functions.https.onCall(async (data, context) => {
 	console.log("Wolfram 1");
 })
 
+function shuffleArray(array: any[]) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+	}
+	
+	return array;
+}
+
+async function generateNewDeck()
+{
+	var deck = new Array<string>();
+
+	await admin.firestore().collection("elementCards").get()
+		.then(function(querySnapshot)  {
+			querySnapshot.forEach(function (doc) {
+				console.log(doc.data().symbol);
+				deck.push(doc.data().symbol);
+			});
+		})
+
+	deck = shuffleArray(deck);
+	
+	return deck;
+}
+
 async function playerTurn(playerId : string, roomId : string) {
 	const seconds = 15;
 
-	const roomTurnDataRef = admin.firestore().collection("roomsTurnData").doc(roomId);
-	const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
+	const roomTurnData = await admin.firestore().collection("roomsTurnData").doc(roomId).get();
+	const playerOnTurnIndex = await (await roomTurnData).get("nextTurn");
 	const playerOnTurn = await (await admin.firestore().collection("roomsData").doc(roomId).get()).get("players")[playerOnTurnIndex];
 
 	for(let i = 0; i < seconds; i++)
@@ -1392,7 +1448,7 @@ async function playerTurn(playerId : string, roomId : string) {
 		await delay(1000);
 		console.log("Sec : " + [i+1]);
 
-		if((await roomTurnDataRef.get()).get("finishedTurnPlayer") === playerOnTurn)
+		if((await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("finishedTurnPlayer") === playerOnTurn)
 		{
 			console.log("Player has made his move");
 			return;
@@ -1400,12 +1456,27 @@ async function playerTurn(playerId : string, roomId : string) {
 	}
 
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+	const roomData = await roomDataRef.get();
 
-	const cardFromDeck = await (await roomDataRef.get()).get("deck")[0];
+	let cardFromDeck;
+
+	if(await roomData.get("deck").length <= 0)
+	{
+		let deck = await generateNewDeck();
+		
+		cardFromDeck = deck[0];
+		await roomDataRef.update({"deck": deck});
+		console.log("Deck size: " + roomData.get("deck").length);
+	}
+	else
+	{
+		cardFromDeck = await (roomData).get("deck")[0];
+	}
+
+	console.log("Deck size: " + roomData.get("deck").length);
+	
+	
 	await roomDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardFromDeck)});
-	// await roomDataRef.update({"deckCardsCount": admin.firestore.FieldValue.increment(-1)});
-	// await admin.firestore().collection("players").doc(playerId).update({"elementCards": admin.firestore.FieldValue.arrayUnion(cardFromDeck)});
-	// await admin.firestore().collection("players").doc(playerId).update({"elementCardsCount": admin.firestore.FieldValue.increment(1)});
 	const cardData = await addNewElementCard(cardFromDeck, playerId);
 
 	const cardToAddData = cardData.uuid + "," + await getCardData(cardFromDeck);
@@ -1542,7 +1613,10 @@ async function dealing (data: any) {
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "H2", "B", "Na", "H2", "H2", "H2", "H2", "Al", "Be"]; //TODO: get them from somewhere
+	//let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "H2", "B", "Na", "H2", "H2", "H2", "H2", "Al", "Be"]; //TODO: get them from somewhere
+	
+	const elementCards = await generateNewDeck();
+	
 	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "NaCl", "NaCl", "NaCl", "NaCl", "NaCl"]; //TODO: get them from somewhere
 
 	for(let i = 0; i < playersCount; i++)
