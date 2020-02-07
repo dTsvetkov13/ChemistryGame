@@ -278,10 +278,11 @@ export const getPlayerCards = functions.https.onCall(async (data, context) => {
 	const playerToken = data.playerToken.toString();
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
+	const playerData = await playerRef.get();
 
-	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
-	const compoundCardsCount = (await playerRef.get()).get("compoundCards").length;
-	const playerName = (await playerRef.get()).get("name");
+	const elementCardsCount = (playerData).get("elementCards").length;
+	const compoundCardsCount = (playerData).get("compoundCards").length;
+	const playerName = (playerData).get("name");
 
 	let compoundCardsString = "";
 
@@ -291,8 +292,8 @@ export const getPlayerCards = functions.https.onCall(async (data, context) => {
 
 	for(let i = 0; i < elementCardsCount; i++)
 	{
-		elementDataTemp = (await playerRef.get()).get("elementCards")[i].name;
-		let elementCardId = (await playerRef.get()).get("elementCards")[i].uuid;
+		elementDataTemp = (playerData).get("elementCards")[i].name;
+		let elementCardId = (playerData).get("elementCards")[i].uuid;
 
 		elementCardsString += elementCardId.toString()+ "," + await getCardData((elementDataTemp)) + "\n";
 	}
@@ -301,7 +302,7 @@ export const getPlayerCards = functions.https.onCall(async (data, context) => {
 
 	for(let i = 0; i < compoundCardsCount; i++)
 	{
-		compoundCardTemp = (await playerRef.get()).get("compoundCards")[i]
+		compoundCardTemp = (playerData).get("compoundCards")[i]
 		compoundCardsString += compoundCardTemp.name + "," + compoundCardTemp.uuid + "\n"; 
 	}
 
@@ -438,13 +439,17 @@ exports.listenersToRoomTurnData = functions.firestore
 
 		let requiredFinishedPlayers;
 
-		if(((await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("gameFinished")))
+		const roomData = await admin.firestore().collection("roomsData").doc(change.after.id).get();
+
+		if((roomData).get("gameFinished"))
 		{
 			console.log("The game is already finished");
 			return;
 		}
 
-		if(await (await admin.firestore().collection("roomsTurnData").doc(change.after.id).get()).get("readyPlayers") < 4)
+		const roomsTurnData = await admin.firestore().collection("roomsTurnData").doc(change.after.id).get();
+
+		if(await (roomsTurnData).get("readyPlayers") < 4)
 		{
 			console.log("Not every player is ready!");
 			return;
@@ -461,7 +466,7 @@ exports.listenersToRoomTurnData = functions.firestore
 				break;
 		}
 
-		if((await admin.firestore().collection("roomsTurnData").doc(change.after.id).get()).get("finishedPlayers") >= requiredFinishedPlayers)
+		if((roomsTurnData).get("finishedPlayers") >= requiredFinishedPlayers)
 		{
 			//TODO: Send message that the game has finished
 			/*var gameFinishedMsg = {
@@ -497,7 +502,7 @@ exports.listenersToRoomTurnData = functions.firestore
 
 		if(nextTurn !== 10 && nextTurnBefore !== 10 && nextTurnBefore !== nextTurn)
 		{
-			const playerId = (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("players")[nextTurn];
+			const playerId = (roomData).get("players")[nextTurn];
 			const playerName = (await admin.firestore().collection("players").doc(playerId).get()).get("name");
 			console.log("player : " + playerId);
 
@@ -507,7 +512,8 @@ exports.listenersToRoomTurnData = functions.firestore
 					"body": playerName + " is on turn!",
 				},
 				"data": {
-					"playerId": playerId
+					"playerId": playerId,
+					"playerName": playerName
 				}
 			}
 	
@@ -545,12 +551,15 @@ async function finishGame(roomId: string)
 
 	var playerData: {points: number; name: string; id: string}[] = new Array<{points: number; name: string; id: string}>();
 
+	const roomData = await roomDataRef.get();
+
 	for(let i = 0; i < playersCount; i++)
 	{
-		const playerId = await (await roomDataRef.get()).get("players")[i];
+		const playerId = await (roomData).get("players")[i];
 		const playerRef = admin.firestore().collection("players").doc(playerId);
-		const playerName = (await playerRef.get()).get("name");
-		const playerPoints = (await playerRef.get()).get("points");
+		const playerDataTemp = await playerRef.get();
+		const playerName = (playerDataTemp).get("name");
+		const playerPoints = (playerDataTemp).get("points");
 		playerData.push({name: playerName, points: playerPoints, id: playerId})
 	}
 
@@ -597,12 +606,10 @@ async function finishGame(roomId: string)
 	}
 
 	await admin.messaging().sendToTopic(roomId, gameFinishedMsg);
-	
-	const roomsDataRef = admin.firestore().collection("roomsData").doc(roomId)
 
-	for(let i = 0; i < (await roomsDataRef.get()).get("subscribedTokens").length; i++)
+	for(let i = 0; i < roomData.get("subscribedTokens").length; i++)
 	{
-		await admin.messaging().unsubscribeFromTopic(await (await roomsDataRef.get()).get("subscribedTokens")[i], roomId);
+		await admin.messaging().unsubscribeFromTopic(await (roomData).get("subscribedTokens")[i], roomId);
 	}
 
 	switch(await (await admin.firestore().collection("rooms").doc(roomId).get()).get("gameType"))
@@ -618,9 +625,9 @@ async function finishGame(roomId: string)
 			break
 	}
 
-	for(let i = 0; i < await (await roomDataRef.get()).get("players").length; i++)
+	for(let i = 0; i < await (roomData).get("players").length; i++)
 	{
-		admin.firestore().collection("players").doc((await roomDataRef.get()).get("players")[i]).delete()
+		admin.firestore().collection("players").doc((roomData).get("players")[i]).delete()
 		.then(function() {
 			console.log("Document successfully deleted!");
 		}).catch(function(error) {
@@ -809,10 +816,11 @@ function delay(ms: number) {
 async function playerHasTheseCards(playerId: string, leftSideCards: any, rightSideCards: any)
 {
 	const playerRef = await admin.firestore().collection("players").doc(playerId);
-	const elementCards = (await playerRef.get()).get("elementCards");
-	const elementCardsCount = (await playerRef.get()).get("elementCards").length;
-	const compoundCards = (await playerRef.get()).get("compoundCards");
-	const compoundCardsCount = (await playerRef.get()).get("compoundCards").length;
+	const playerData = (await playerRef.get());
+	const elementCards = (playerData).get("elementCards");
+	const elementCardsCount = (playerData).get("elementCards").length;
+	const compoundCards = (playerData).get("compoundCards");
+	const compoundCardsCount = (playerData).get("compoundCards").length;
 
 	let matching = 0;
 
@@ -943,9 +951,13 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 	}).then(async (queryresult: any) => {
 		if(queryresult.numpods !== 0)
 		{
-			console.log(queryresult.pods[0].subpods[0].plaintext);
+			var receivedString = queryresult.pods[0].subpods[0].plaintext;
+			
+			console.log(receivedString);
+			
+			
 
-			if(queryresult.pods[0].subpods[0].plaintext === '(data not available)')
+			if(receivedString === '(data not available)')
 			{
 				console.log("No such a reaction");
 				//return no such a reaction
@@ -962,7 +974,6 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 			}
 			else
 			{
-				var receivedString = queryresult.pods[0].subpods[0].plaintext;
 				var splitted = receivedString.split("\n")[0].split(" ");
 				console.log(splitted);
 
@@ -1093,9 +1104,11 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 
 			await admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
 			
-			if((await admin.firestore().collection("players").doc(playerId).get()).get("elementCards").length <= 0)
+			const playerData = await admin.firestore().collection("players").doc(playerId).get();
+
+			if((playerData).get("elementCards").length <= 0)
 			{
-				const roomId = await (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
+				const roomId = await (playerData).get("roomId");
 				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
 				await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
 			}
@@ -1257,8 +1270,8 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 
 	for(let i = 0; i < elementCardsCount; i++)
 	{
-		if((await playerRef.get()).get("elementCards")[i].name === cardName 
-			&& (await playerRef.get()).get("elementCards")[i].uuid === cardUuid)
+		if((playerData).get("elementCards")[i].name === cardName 
+			&& (playerData).get("elementCards")[i].uuid === cardUuid)
 		{
 			const elementCardsRef = await admin.firestore().collection("elementCards");
 			const lastCardData = await (await elementCardsRef.doc((await roomDataRef.get()).get("lastCard"))).get();
@@ -1585,10 +1598,11 @@ async function configurePlayers (data : any) {
 	for(let i = 0; i < playersCount; i++)
 	{
 		const playerId = (await roomDataRef.get()).get("players")[i];
-		await playersRef.doc(playerId.toString()).set({"name": (await usersRef.doc(playerId.toString()).get()).get("username")});
+		const playerData = await usersRef.doc(playerId.toString()).get();
+		await playersRef.doc(playerId.toString()).set({"name": playerData.get("username")});
 		await playersRef.doc(playerId.toString()).update({"roomId": roomId});
 		await playersRef.doc(playerId.toString()).update({"points": 0});
-		playerNames[i] = (await (await admin.firestore().collection("players").doc(playerId).get()).get("name"));
+		playerNames[i] = playerData.get("username");
 		console.log("Player id : " + playerId);
 	}
 
