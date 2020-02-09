@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 // import {UUID} from '../node_modules/uuid-generator-ts';
 const uuidv4 = require('uuid/v4');
 import * as admin from 'firebase-admin';
+// import { ResultStorage } from 'firebase-functions/lib/providers/testLab';
 // import { DataSnapshot } from 'firebase-functions/lib/providers/database';
 //import { DataSnapshot } from 'firebase-functions/lib/providers/database';
 //import { DataSnapshot } from 'firebase-functions/lib/providers/database';
@@ -232,7 +233,7 @@ exports.listenersToRoomFreeSeats = functions.firestore
 			const playersNames = await configurePlayers({roomId: change.after.id});
 			await dealing({roomId: change.after.id});		
 
-			const lastCard = await (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("lastCard");
+			const lastCard = await (await admin.firestore().collection("roomCardsData").doc(change.after.id).get()).get("lastCard");
 			let lastCardData = "";
 
 			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": true});
@@ -346,33 +347,30 @@ export const getDeckCard = functions.https.onCall(async(data, context) => {
 	const playerId = data.playerId;
 	const roomId = data.roomId;
 	const playerToken = data.playerToken;
-
 	const roomsTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
-	const playerOnTurnIndex = await (await roomsTurnDataRef.get()).get("nextTurn");
-	const roomsData = await admin.firestore().collection("roomsData").doc(roomId).get();
-
-	if(playerId === (await roomsData.get("players")[playerOnTurnIndex]))
-	{	
-		await roomsTurnDataRef.update({"finishedTurnPlayer": playerId});
-		console.log("Player is on turn");
-		const roomsDataRef = admin.firestore().collection("roomsData").doc(roomId);
-		
+	//const playerOnTurnIndex = await (await roomsTurnDataRef.get()).get("nextTurn");
+	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
+	const roomCardsData = await roomCardsDataRef.get();
+	//if(playerId === (await roomsData.get("players")[playerOnTurnIndex]))
+	//{		
 		let cardToGiveName;
 
-		if(!(await roomsData.get("deck").length > 0))
+		if(!(await roomCardsData.get("deck").length > 0))
 		{
 			const deck = await generateNewDeck();
 			cardToGiveName = deck[0];
-			await roomsDataRef.update({"deck": deck});
+			await roomCardsDataRef.update({"deck": deck});
 		}
 		else
 		{
-			cardToGiveName = await (roomsData).get("deck")[0];
+			cardToGiveName = await (roomCardsData).get("deck")[0];
 		}
+
+		await roomsTurnDataRef.update({"finishedTurnPlayer": playerId});
 
 		const cardData = await addNewElementCard(cardToGiveName, playerId);
 
-		await roomsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardToGiveName)});
+		await roomCardsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardToGiveName)});
 
 		const cardToGiveData = cardData.uuid + "," + await getCardData(cardToGiveName);
 
@@ -387,7 +385,7 @@ export const getDeckCard = functions.https.onCall(async(data, context) => {
 		};
 
 		await admin.messaging().sendToDevice(playerToken, getDeckCardMsg);
-	}
+	//}
 })
 
 //TODO: Check if this functions is used
@@ -1248,14 +1246,14 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const playerData = await playerRef.get();
-	const elementCardsCount = playerData.get("elementCards").length;
-	const roomData = await roomDataRef.get();
+	// const playerData = await playerRef.get();
+	// const elementCardsCount = playerData.get("elementCards").length;
+	// const roomData = await roomDataRef.get();
 	const roomTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
 
-	const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
+	// const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
 
-	if(!(playerId === await roomData.get("players")[playerOnTurnIndex]))
+	/*if(!(playerId === await roomData.get("players")[playerOnTurnIndex]))
 	{
 		var notYourTurnMsg = {
 			"notification": {
@@ -1266,15 +1264,17 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 
 		await admin.messaging().sendToDevice(playerToken, notYourTurnMsg);
 		return;
-	}
+	}*/
 
-	for(let i = 0; i < elementCardsCount; i++)
-	{
-		if((playerData).get("elementCards")[i].name === cardName 
-			&& (playerData).get("elementCards")[i].uuid === cardUuid)
-		{
+	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
+
+	// for(let i = 0; i < elementCardsCount; i++)
+	// {
+		// if((playerData).get("elementCards")[i].name === cardName 
+			// && (playerData).get("elementCards")[i].uuid === cardUuid)
+		// {
 			const elementCardsRef = await admin.firestore().collection("elementCards");
-			const lastCardData = await (await elementCardsRef.doc((await roomDataRef.get()).get("lastCard"))).get();
+			const lastCardData = await (await elementCardsRef.doc((await roomCardsDataRef.get()).get("lastCard"))).get();
 			const currentCardData = await (await elementCardsRef.doc(cardName)).get();
 			
 			console.log("Player has the card");
@@ -1338,10 +1338,10 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 				console.log("The group and the period do not coincide")
 				return false;
 			}
-		}
-	}
+		// }
+	// }
 
-	var incorrectCardMsg = {
+	/*var incorrectCardMsg = {
 		"notification": {
 			"title": "Incorrect card",
 			"body": "You do not have this card"
@@ -1353,7 +1353,7 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 	//TODO: Send msg that the player does not have the card
 
 	console.log("End of the function");
-	return false;
+	return false;*/
 })
 
 exports.callWolframApi = functions.https.onCall(async (data, context) => {
@@ -1468,28 +1468,28 @@ async function playerTurn(playerId : string, roomId : string) {
 		}
 	}
 
-	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const roomData = await roomDataRef.get();
+	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
+	const roomCardsData = await roomCardsDataRef.get();
 
 	let cardFromDeck;
 
-	if(await roomData.get("deck").length <= 0)
+	if(await roomCardsData.get("deck").length <= 0)
 	{
 		let deck = await generateNewDeck();
 		
 		cardFromDeck = deck[0];
-		await roomDataRef.update({"deck": deck});
-		console.log("Deck size: " + roomData.get("deck").length);
+		await roomCardsDataRef.update({"deck": deck});
+		console.log("Deck size: " + roomCardsData.get("deck").length);
 	}
 	else
 	{
-		cardFromDeck = await (roomData).get("deck")[0];
+		cardFromDeck = await (roomCardsData).get("deck")[0];
 	}
 
-	console.log("Deck size: " + roomData.get("deck").length);
+	console.log("Deck size: " + roomCardsData.get("deck").length);
 	
 	
-	await roomDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardFromDeck)});
+	await roomCardsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardFromDeck)});
 	const cardData = await addNewElementCard(cardFromDeck, playerId);
 
 	const cardToAddData = cardData.uuid + "," + await getCardData(cardFromDeck);
@@ -1662,11 +1662,13 @@ async function dealing (data: any) {
 		else playerIndex++;
 	}
 
-	await roomDataRef.update({"lastCard": elementCards[playersCount * elementCardsToDeal]});
+	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
+
+	await roomCardsDataRef.set({"lastCard": elementCards[playersCount * elementCardsToDeal]});
 	
 	await elementCards.splice(0, playersCount * elementCardsToDeal + 1);
 	
-	await roomDataRef.update({"deck": elementCards});
+	await roomCardsDataRef.update({"deck": elementCards});
 	// await roomDataRef.update({"deckCardsCount": elementCards.length});
 
 	// for(let i = 0; i < playersCount; i++)
@@ -1677,3 +1679,104 @@ async function dealing (data: any) {
 
 	return "Successfully dealing";
 }
+
+export const addFriend = functions.https.onCall(async (data, context) => {
+	const friendUsername = data.friendUsername;
+	const userId = data.userId;
+	const friendUid = await (await admin.auth().getUserByEmail(friendUsername + "@domain.com")).uid;
+
+	await admin.firestore().collection("invitations").doc(friendUid).get().then(async (doc) => {
+		if(doc.exists)
+		{
+			await admin.firestore().collection("invitations").doc(friendUid)
+			.update({"invitations": admin.firestore.FieldValue.arrayUnion(userId)});
+		}
+		else
+		{
+			await admin.firestore().collection("invitations").doc(friendUid)
+			.set({"invitations": admin.firestore.FieldValue.arrayUnion(userId)});
+		}
+	})
+
+
+});
+
+export const acceptInvitation = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+	const friendUsername = data.friendUsername;
+	const friendId = await (await admin.auth().getUserByEmail(friendUsername + "@domain.com")).uid;
+	
+	await admin.firestore().collection("invitations").doc(userId)
+	.update({"invitations": admin.firestore.FieldValue.arrayRemove(friendId)});
+
+	await admin.firestore().collection("friends").doc(userId).get().then(async (doc) => {
+		if(doc.exists)
+		{
+			await admin.firestore().collection("friends").doc(userId)
+			.update({"friends": admin.firestore.FieldValue.arrayUnion(friendId)});
+		}
+		else
+		{
+			await admin.firestore().collection("friends").doc(userId)
+			.set({"friends": admin.firestore.FieldValue.arrayUnion(friendId)});
+		}
+	})
+
+	await admin.firestore().collection("friends").doc(friendId).get().then(async (doc) => {
+		if(doc.exists)
+		{
+			await admin.firestore().collection("friends").doc(friendId)
+			.update({"friends": admin.firestore.FieldValue.arrayUnion(userId)});
+		}
+		else
+		{
+			await admin.firestore().collection("friends").doc(friendId)
+			.set({"friends": admin.firestore.FieldValue.arrayUnion(userId)});
+		}
+	})
+})
+
+export const declineInvitation = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+	const friendUsername = data.friendUsername;
+	const friendUid = await (await admin.auth().getUserByEmail(friendUsername + "@domain.com")).uid;
+
+	await admin.firestore().collection("invitations").doc(userId)
+	.update({"invitations": admin.firestore.FieldValue.arrayRemove(friendUid)});
+})
+
+export const getAllInvitations = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+
+	let result = new Array<string>();
+
+	const invitations = (await admin.firestore().collection("invitations").doc(userId).get()).get("invitations");
+
+	for(let i = 0; i < invitations.length; i++)
+	{
+		const email = (await admin.auth().getUser(invitations[i])).email;
+		const username = email?.split("@")[0];
+
+		if(username !== undefined) result.push(username);
+	}
+
+	return result;
+})
+
+export const getAllFriends = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+
+	let result = new Array<string>();
+
+	const friends = (await admin.firestore().collection("friends").doc(userId).get()).get("friends");
+
+	for(let i = 0; i < friends.length; i++)
+	{
+		const email = (await admin.auth().getUser(friends[i])).email;
+		const username = email?.split("@")[0];
+
+		if(username !== undefined) result.push(username);
+	}
+
+	return result;
+})
