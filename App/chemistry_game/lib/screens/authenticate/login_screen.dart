@@ -97,30 +97,29 @@ class LoginForm extends State<LoginScreen> {
                 ),
 
                 Padding(
-                    padding: EdgeInsets.only(
-                        bottom: _minimumPadding, top: _minimumPadding),
-                    child: RaisedButton(
-                        child: Text(
-                          'Login',
-                          textScaleFactor: 1.5,
-                        ),
-
-                        onPressed: () async {
-                          if(_formKey.currentState.validate()){
-                            //setState(() => loading = true);
-                            dynamic result = await _auth.signInWithEmailAndPassword(email, password);
-                            if(result == null) {
-                              setState(() {
-                                //loading = false;
-                                error = 'Could not sign in with those credentials';
-                              });
-                            } else {
-                              print(result);
-                              Navigator.pop(context);
-                            }
-                          }
+                  padding: EdgeInsets.only(
+                    bottom: _minimumPadding, top: _minimumPadding),
+                  child: RaisedButton(
+                    child: Text(
+                      'Login',
+                      textScaleFactor: 1.5,
+                    ),
+                    onPressed: () async {
+                      if(_formKey.currentState.validate()){
+                        //setState(() => loading = true);
+                        dynamic result = await _auth.signInWithEmailAndPassword(email, password);
+                        if(result == null) {
+                          setState(() {
+                            //loading = false;
+                            error = 'Could not sign in with those credentials';
+                          });
+                        } else {
+                          print(result);
+                          Navigator.pop(context);
                         }
-                    )
+                      }
+                    }
+                  )
                 )
               ],
             ),

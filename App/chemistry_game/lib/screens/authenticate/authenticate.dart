@@ -2,6 +2,7 @@ import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:nice_button/nice_button.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -41,36 +42,55 @@ class AuthenticateState extends State<Authenticate> {
     final mediaQueryData = MediaQuery.of(context);
     final height = mediaQueryData.size.height;
     final width = mediaQueryData.size.width;
-    final buttonWidth = mediaQueryData.size.width * 0.35;
-    final buttonHeight = mediaQueryData.size.height * 0.06;
+    final buttonWidth = mediaQueryData.size.width * 0.4;
+    final buttonHeight = mediaQueryData.size.height * 0.15;
 
     return Scaffold(
-        body: Center(
-          child: Container(
-            width: width * 0.4,
-            height: height * 0.7,
-            color: Colors.blueGrey,
-            child: Center(
-                child: ListView(
-                  scrollDirection: Axis.vertical,
-                  children: <Widget> [
-                    ValueListenableBuilder(
-                      valueListenable: error,
-                      child: Text(error.value),
-                      builder: (BuildContext context, String value , Widget child) {
-                        return Text(error.value);
-                      }
-                    ),
-                    loginStateChangeButton(buttonWidth, buttonHeight),
-                    loginArea(width * 0.4, height * 0.35),
-                    registerStateChangeButton(buttonWidth, buttonHeight),
-                    registerArea(width * 0.4, height * 0.35),
-                    informationStateChangeButton(buttonWidth, buttonHeight),
-                    //TODO: add informationArea
-                  ]
-                )
+      resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.05,
+                child: DecoratedBox(
+                  position: DecorationPosition.background,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: AssetImage("images/background4.png"),
+                          fit: BoxFit.cover
+                      )
+                  ),
+                ),
+              ),
+            ),
+            Center(
+            child: Container(
+              width: width * 0.4,
+              height: height * 0.7,
+//            color: Colors.blueGrey,
+              child: Center(
+                  child: ListView(
+                    scrollDirection: Axis.vertical,
+                    children: <Widget> [
+                      ValueListenableBuilder(
+                        valueListenable: error,
+                        child: Text(error.value),
+                        builder: (BuildContext context, String value , Widget child) {
+                          return Text(error.value);
+                        }
+                      ),
+                      loginStateChangeButton(buttonWidth, buttonHeight),
+                      loginArea(width * 0.4, height * 0.35),
+                      registerStateChangeButton(buttonWidth, buttonHeight),
+                      registerArea(width * 0.4, height * 0.35),
+                      informationStateChangeButton(buttonWidth, buttonHeight),
+                      //TODO: add informationArea
+                    ]
+                  )
+              ),
             ),
           ),
+          ]
         )
     );
 
@@ -82,16 +102,19 @@ class AuthenticateState extends State<Authenticate> {
       child: SizedBox(
         height: height,
         width: width,
-        child: RaisedButton (
-            child: Text("Login"),
-            //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
-            //padding: EdgeInsets.only(right: mediaQueryData.size.width/3, bottom: mediaQueryData.size.height/5),
-            onPressed: () {
-              print("Login pressed");
-              setState(() {
-                loginAreaFirstChild = !loginAreaFirstChild;
-              });
-            }
+        child: NiceButton (
+          width: width,
+          elevation: 8.0,
+          radius: 52.0,
+          background: Colors.blue,
+          textColor: Colors.black,
+          text: "Login",
+          onPressed: () {
+            print("Login pressed");
+            setState(() {
+              loginAreaFirstChild = !loginAreaFirstChild;
+            });
+          }
         ),
       ),
     );
@@ -117,20 +140,20 @@ class AuthenticateState extends State<Authenticate> {
           scrollDirection: Axis.vertical,
           children: <Widget>[
             TextFormField(
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: TextInputType.text,
               controller: usernameController,
-              validator: (val) => val.isEmpty ? 'Enter an email' : null,
+              validator: (val) => val.isEmpty ? 'Enter your username' : null,
               onChanged: (val) {
                 setState(() {
-                  email = val;
+                  username = val;
                 });
               },
 
               decoration: InputDecoration(
-                  labelText: "Email",
-                  hintText: "Please enter your email",
+                  labelText: "Username",
+                  hintText: "Please enter your username",
                   errorStyle: TextStyle(
-                      color: Colors.yellowAccent,
+                      color: Colors.red,
                       fontSize: 15.0
                   ),
 
@@ -155,7 +178,7 @@ class AuthenticateState extends State<Authenticate> {
                   labelText: "Password",
                   hintText: "Please enter your password",
                   errorStyle: TextStyle(
-                      color: Colors.yellowAccent,
+                      color: Colors.red,
                       fontSize: 15.0
                   ),
 
@@ -171,15 +194,34 @@ class AuthenticateState extends State<Authenticate> {
               ),
               onPressed: () async {
                 if(_loginFormKey.currentState.validate()){
-                  //setState(() => loading = true);
-                  dynamic result = await _auth.signInWithEmailAndPassword(email, password);
-                  if(result == null) {
-                    setState(() {
-                      //loading = false;
-                      error.value = 'Could not sign in with those credentials';
-                    });
-                  } else {
-                    print(result);
+                  try {
+                    dynamic result = await _auth.signInWithEmailAndPassword(username + "@domain.com", password);
+                    print(result.uid);
+                  }
+                  catch(error) {
+                    print(error.code.toString());
+                    switch (error.code) {
+                      case "ERROR_INVALID_EMAIL":
+                        this.error.value = "Your email address appears to be malformed.";
+                        break;
+                      case "ERROR_WRONG_PASSWORD":
+                        this.error.value = "Your password is wrong.";
+                        break;
+                      case "ERROR_USER_NOT_FOUND":
+                        this.error.value = "User with this username doesn't exist.";
+                        break;
+                      case "ERROR_USER_DISABLED":
+                        this.error.value = "User with this username has been disabled.";
+                        break;
+                      case "ERROR_TOO_MANY_REQUESTS":
+                        this.error.value = "Too many requests. Try again later.";
+                        break;
+                      case "ERROR_OPERATION_NOT_ALLOWED":
+                        this.error.value = "Signing in with Username and Password is not enabled.";
+                        break;
+                      default:
+                        this.error.value = "An undefined Error happened.";
+                    }
                   }
                 }
               }
@@ -196,8 +238,13 @@ class AuthenticateState extends State<Authenticate> {
       child: SizedBox(
         height: height,
         width: width,
-        child: RaisedButton(
-            child: Text("Register"),
+        child: NiceButton(
+            width: width,
+            elevation: 8.0,
+            radius: 52.0,
+            background: Colors.blue,
+            textColor: Colors.black,
+            text: "Register",
             //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
             onPressed: () {
               print("Register pressed");
@@ -214,12 +261,12 @@ class AuthenticateState extends State<Authenticate> {
     return AnimatedCrossFade(
       duration: Duration(seconds: 1),
       firstChild: Container(width: 0, height: 0,),
-      secondChild: registerForm(height),
+      secondChild: registerForm(height, width),
       crossFadeState: registerAreaFirstChild ? CrossFadeState.showFirst : CrossFadeState.showSecond,
     );
   }
 
-  Form registerForm(double height) {
+  Form registerForm(double height, double width) {
     return Form(
       key: _registerFormKey,
       child: Container(
@@ -241,7 +288,7 @@ class AuthenticateState extends State<Authenticate> {
                   labelText: "Username",
                   hintText: "Please enter your username",
                   errorStyle: TextStyle(
-                      color: Colors.yellowAccent,
+                      color: Colors.red,
                       fontSize: 15.0
                   ),
 
@@ -264,7 +311,7 @@ class AuthenticateState extends State<Authenticate> {
                   labelText: "Email",
                   hintText: "Please enter your email",
                   errorStyle: TextStyle(
-                      color: Colors.yellowAccent,
+                      color: Colors.red,
                       fontSize: 15.0
                   ),
 
@@ -289,7 +336,7 @@ class AuthenticateState extends State<Authenticate> {
                   labelText: "Password",
                   hintText: "Please enter your password",
                   errorStyle: TextStyle(
-                      color: Colors.yellowAccent,
+                      color: Colors.red,
                       fontSize: 15.0
                   ),
 
@@ -298,25 +345,30 @@ class AuthenticateState extends State<Authenticate> {
                   )
               ),
             ),
-            RaisedButton(
-                child: Text(
-                  'Register',
-                  textScaleFactor: 1.5,
-                ),
-
+            NiceButton(
+              width: width,
+              elevation: 8.0,
+              background: Colors.blue,
+              textColor: Colors.black,
+//              radius: 52.0,
+              text: "Register",
                 onPressed: () async {
                   if(_registerFormKey.currentState.validate()){
-                    //setState(() => loading = true);
-                    dynamic result = await _auth.registerWithEmailAndPassword(email, password);
-                    if(result == null) {
-                      setState(() {
-                        //loading = false;
-                        error.value = 'Could not register with those credentials';
-                      });
-                    } else {
+                    try {
+                      dynamic result = await _auth.registerWithEmailAndPassword(username + "@domain.com", password);
                       print(result.uid);
                       DatabaseService(result.uid).configureUser(username);
                       Navigator.pop(context);
+                    }
+                    catch(error) {
+                      print(error);
+                      switch (error.code) {
+                        case "ERROR_EMAIL_ALREADY_IN_USE":
+                          this.error.value = "This username is already used";
+                          break;
+                        default:
+                          this.error.value = "An undefined error happened.";
+                      }
                     }
                   }
                 }
@@ -333,8 +385,13 @@ class AuthenticateState extends State<Authenticate> {
       child: SizedBox(
         height: height,
         width: width,
-        child: RaisedButton (
-            child: Text("Information"),
+        child: NiceButton (
+            width: width,
+            elevation: 8.0,
+            radius: 52.0,
+            background: Colors.blue,
+            textColor: Colors.black,
+            text: "Information",
             //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
             //padding: EdgeInsets.only(right: mediaQueryData.size.width/3, bottom: mediaQueryData.size.height/5),
             onPressed: () {

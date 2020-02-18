@@ -1,5 +1,8 @@
 import 'package:chemistry_game/animations/element_comet.dart';
 import 'package:chemistry_game/backgrounds/home_background.dart';
+import 'package:chemistry_game/models/profile_data.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/screens/authenticate/login_screen.dart';
 import 'package:chemistry_game/screens/authenticate/register_screen.dart';
@@ -29,11 +32,45 @@ class HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = 0;
 
-
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  var userToken;
+  FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
+
+  static var username = "";
+  var singleGameWins = "";
+  var teamGameWins = "";
+
+  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getProfileData',
+  );
+
+  @override
+  Future<void> initState() {
+    super.initState();
+    _firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) {
+          var title = message["notification"]["title"];
+          print("Meesage received in home");
+          switch(title) {
+            case ("Profile Data"):
+              ProfileData.name = message["data"]["userName"];
+              ProfileData.singleGameWins = message["data"]["singleGameWins"];
+              ProfileData.teamGameWins = message["data"]["teamGameWins"];
+              break;
+            default:
+          }
+
+          return;
+        }
+    );
+    _firebaseMessaging.getToken().then((token) async {
+      userToken = token;
+      print("Token : $userToken");
     });
   }
 
@@ -47,151 +84,173 @@ class HomeScreenState extends State<HomeScreen> {
       DeviceOrientation.landscapeLeft,
     ]); //Landscape mode
 
+    final mediaQueryData = MediaQuery.of(context);
+    final mediaQueryWidth = mediaQueryData.size.width;
+    final mediaQueryHeight = mediaQueryData.size.height;
+
     User user = Provider.of<User>(context);
     print("Third user");
     print(user.uid);
+//    callGetProfileData.call({"userId": user.uid, "userToken": userToken});
 
     List<Widget> _widgetOptions = <Widget>[
       MainScreen(userId: user.uid),
-      ProfileScreen(),
-      FriendsScreen(),
+      ProfileScreen(userId: user.uid),
+      FriendsScreen(userId: user.uid,),
       RankingScreen()
     ];
 
-
-    //UserData userData = DatabaseService(user.uid).userDataFromSnapshot();
+    Widget drawProfileData() {
+      return Column(
+        children: <Widget>[
+          Icon(Icons.person),
+          Text(
+            ProfileData.name,
+            style: TextStyle(
+              fontWeight: FontWeight.bold
+            ),
+          ),
+          Text(
+              "Single Player Wins: " + ProfileData.singleGameWins
+          ),
+          Text(
+              "Team Game Wins: " + ProfileData.teamGameWins
+          )
+        ],
+      );
+    }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       endDrawer: Drawer(
-        child: ListView(
-          children: <Widget>[
-            Container(
-              height: 100,
-              child: DrawerHeader(
-                child: Text("Home Menu"),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
+        child: Container(
+          child: ListView(
+            children: <Widget>[
+              Container(
+                height: mediaQueryHeight * 0.3,
+                child: DrawerHeader(
+                  child: ValueListenableBuilder(
+                    valueListenable: ProfileData.updated,
+                    child: drawProfileData(),
+                    builder: (BuildContext context, bool value, Widget child) {
+                      return drawProfileData();
+                    },
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              title: Text('Home'),
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 0;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text('Profile'),
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 1;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text('Friends'),
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 2;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text('Ranking'),
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 3;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Text("Log out"),
-              onTap: () async {
-                await _auth.signOut();
-              },
-            )
-          ],
+              ListTile(
+                title: Row(
+                  children: <Widget>[
+                    Icon(Icons.home),
+                    Text(
+                      "Home"
+                    )
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 0;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Text('Profile'),
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 1;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Row(
+                  children: <Widget>[
+                    Icon(Icons.people),
+                    Text(
+                      "Friends"
+                    )
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 2;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Row(
+                  children: <Widget>[
+                    Icon(Icons.assessment),
+                    Text(
+                        "Ranking"
+                    )
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 3;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: Row(
+                  children: <Widget>[
+                    Icon(Icons.exit_to_app),
+                    Text(
+                        "Log Out"
+                    )
+                  ],
+                ),
+                onTap: () async {
+                  await _auth.signOut();
+                },
+              )
+            ],
+          ),
         ),
       ),
       body: Builder(
-        builder: (context) =>  Stack(
-          children: <Widget> [
-            HomeBackground(),
-            ElementComet(name: "H2"),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.menu),
-                  onPressed: () {
-                    Scaffold.of(context).openEndDrawer();
-                  },
-                )
-              ],
-            ),
-            Center(
-              child: _widgetOptions.elementAt(_selectedIndex),
-            ),
-        ]
+        builder: (context) =>  Container(
+          child: Stack(
+            children: <Widget> [
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.05,
+                  child: DecoratedBox(
+                    position: DecorationPosition.background,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage("images/background4.png"),
+                          fit: BoxFit.cover
+                        )
+                    ),
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.menu),
+                    onPressed: () {
+                      Scaffold.of(context).openEndDrawer();
+                    },
+                  )
+                ],
+              ),
+              Center(
+                child: _widgetOptions.elementAt(_selectedIndex),
+              ),
+          ]
+          ),
         ),
       ),
     );
-
-    /*return Scaffold(
-      appBar: AppBar(
-        title: Text("Chemistry Game"),
-        elevation: 0.0,
-        actions: <Widget>[
-          FlatButton.icon(
-            icon: Icon(Icons.person),
-            label: Text('logout'),
-            onPressed: () async {
-              await _auth.signOut();
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            title: Text(
-                'Home'
-            ),
-            backgroundColor: Colors.blue
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            title: Text('Profile'),
-            backgroundColor: Colors.blue
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            title: Text('Friends'),
-            backgroundColor: Colors.blue
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.backup), //TODO: change the icon to something with ranking
-            title: Text('Ranking'),
-            backgroundColor: Colors.blue
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-      ),
-
-
-    );*/
   }
 }

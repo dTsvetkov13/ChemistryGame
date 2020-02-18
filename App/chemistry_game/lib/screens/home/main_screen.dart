@@ -1,11 +1,16 @@
 import 'package:chemistry_game/models/element_card.dart';
+import 'package:chemistry_game/models/fieldPlayer.dart';
 import 'package:chemistry_game/models/player.dart';
+import 'package:chemistry_game/models/profile_data.dart';
+import 'package:chemistry_game/screens/home/home.dart';
 import 'package:chemistry_game/screens/loading_screen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/constants/text_styling.dart';
 import 'package:chemistry_game/screens/game_screens/room_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nice_button/nice_button.dart';
 import 'package:provider/provider.dart';
 
 enum gameType {
@@ -31,15 +36,12 @@ class _MainScreenState extends State<MainScreen> {
   _MainScreenState({this.userId});
 
   static Map<gameType, Widget> gameTypeWindow = {
-    gameType.singleGame: createGameWindow("Single Mode"),
-    gameType.teamGame: createGameWindow("Team Mode"),
+    gameType.singleGame: createGameWindow("Single Player"),
+    gameType.teamGame: createGameWindow("Multiplayer"),
   };
 
   static ValueNotifier<int> currentIndex = ValueNotifier<int>(0);
   static ValueNotifier<gameType> currGT = ValueNotifier<gameType>(gameType.singleGame);
-  //static int currentIndex = 0;
-  //gameType selectedGameType = types[currentIndex.value];
-  //gameType selectedGameType = types[currentIndex];
 
   static List<gameType> types = [
     gameType.singleGame, gameType.teamGame
@@ -64,14 +66,20 @@ class _MainScreenState extends State<MainScreen> {
     functionName: 'readyPlayer',
   );
 
+  final HttpsCallable callAcceptTeamInvitation = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'acceptTeamInvitation',
+  );
+
+
   FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
-  String playerToken;
+  String userToken;
 
   var roomId;
   var lastCard;
   var playersNames;
-  var playerName;
+  var playerName = "";
+  bool playBtnCalled = false;
 
   @override
   void initState() {
@@ -89,8 +97,7 @@ class _MainScreenState extends State<MainScreen> {
               lastCard = message["data"]["lastCard"];
               playersNames = message["data"]["playersNames"];
 
-              callGetPlayerCards({"playerId": userId, "playerToken": playerToken});
-
+              callGetPlayerCards({"playerId": userId, "playerToken": userToken});
               break;
             case("Join Room") :
 
@@ -102,30 +109,153 @@ class _MainScreenState extends State<MainScreen> {
 
               print("Element Cards: " + elementCards);
               print("Compound Cards: " + compoundCards);
+              print(getPlayerNames(playersNames));
+
+              var playerNames = getPlayerNames(playersNames);
+
+              Player player = new Player(playerName, userId, elementCards, compoundCards);
+
+              var fieldPlayers = new List<FieldPlayer>();
+              playerNames.forEach((name) {
+                fieldPlayers.add(
+                  new FieldPlayer(name: name, cardsNumber: player.elementCards.length)
+                );
+              });
 
               lastCard = lastCard.split(",");
 
-              Player player = new Player(playerName, userId, elementCards, compoundCards);
               ElementCard lastCardData = new ElementCard(name: lastCard[0], group: lastCard[1], period: int.parse(lastCard[2]));
-
-
 
               Navigator.pop(context);
               Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => BuildRoomScreen(roomId: roomId, playerId: userId, lastCardData: lastCardData,
-                      playersNames: playersNames, player: player, firebaseMessaging: _firebaseMessaging,))
+                      player: player, firebaseMessaging: _firebaseMessaging, fieldPlayers: fieldPlayers,))
               );
               await callReadyPlayer.call({"roomId": roomId});
+              break;
+            case("Team Invation Accepted"):
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LoadingScreen())
+              );
+              break;
+            case("Team Invitation"):
+              var senderName = message["data"]["senderName"];
+              var senderId = message["data"]["senderId"];
+
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text(
+                        senderName.toString() + " wants to play a Multiplayer Game with you. Join him?"
+                    ),
+
+                    content: Container(
+                      width: mediaQueryData.size.height * 0.5,
+                      height: mediaQueryData.size.width * 0.2,
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            NiceButton(
+                              width: mediaQueryData.size.width * 0.2,
+//                              width: 100,
+                              elevation: 1.0,
+                              radius: 52.0,
+                              background: Colors.lightGreenAccent,
+                              textColor: Colors.black,
+                              text: "Yes",
+                              onPressed: () {
+                                Navigator.pop(context);
+                                var data = {
+                                  "receiverId": senderId,
+                                  "senderName": ProfileData.name
+                                };
+
+                                callAcceptTeamInvitation.call(data);
+
+                                data = {
+                                  "gameType": "TeamGame",
+                                  "firstPlayerId": "11",
+                                  "firstPlayerToken": userToken,
+                                  "secondPlayerId": senderId
+                                };
+
+                                callFindRoom.call(data);
+                              },
+                            ),
+                            NiceButton(
+                              width: mediaQueryData.size.width * 0.2,
+//                              width: 100,
+                              elevation: 1.0,
+                              radius: 52.0,
+                              background: Colors.lightGreenAccent,
+                              textColor: Colors.black,
+                              text: "No",
+                              onPressed: () {
+                                Navigator.pop(context);
+                                //TODO: send msg that this user declined
+                              },
+                            )
+                          ],
+                        ),
+                      ),
+                    )
+                  );
+                }
+              );
+
+              break;
+            case ("Profile Data"):
+              ProfileData.name = message["data"]["userName"];
+              ProfileData.singleGameWins = message["data"]["singleGameWins"];
+              ProfileData.teamGameWins = message["data"]["teamGameWins"];
+              ProfileData.updated.value = !ProfileData.updated.value;
               break;
           }
 
           return;
         }
     );
-    _firebaseMessaging.getToken().then((token) {
-      playerToken = token;
-      print("Token : $playerToken");
+    _firebaseMessaging.getToken().then((token) async {
+      userToken = token;
+
+      var data = {
+        "userId": userId,
+        "userToken": userToken
+      };
+
+//      callUpdateCurrToken.call(data);
+
+      print("Token : $userToken");
+
+      data = {
+        "userId": userId
+      };
+
+//      callGetAllFriends.call(data);
+//      callGetAllInvitations.call(data);
+
+      data = {
+        "sortedBy": "singleGameWins"
+      };
+
+//      callGetTopTen.call(data);
+
+      data = {
+        "sortedBy": "teamGameWins"
+      };
+
+//      callGetTopTen.call(data);
+
+      data = {
+        "userToken": userToken,
+        "userId": userId
+      };
+
+      callGetProfileData.call(data);
     });
   }
 
@@ -141,12 +271,12 @@ class _MainScreenState extends State<MainScreen> {
 
     switch(playerTurnIndex) {
       case(0):
-        for(int i = playerTurnIndex + 1; i < playerNamesSplitted.length; i++) {
+        for(int i = 1; i < playerNamesSplitted.length; i++) {
           result.add(playerNamesSplitted[i]);
         }
         break;
       case(1):
-        for(int i = playerTurnIndex + 1; i < playerNamesSplitted.length; i++) {
+        for(int i = 2; i < playerNamesSplitted.length; i++) {
           result.add(playerNamesSplitted[i]);
         }
         result.add(playerNamesSplitted[0]);
@@ -167,15 +297,52 @@ class _MainScreenState extends State<MainScreen> {
     return result;
   }
 
+  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getProfileData',
+  );
+
+  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllFriends',
+  );
+
+  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllInvitations',
+  );
+
+  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getTopTen',
+  );
+
+  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'updateCurrToken',
+  );
+
+  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'sendTeamGameInvitation',
+  );
+
+  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getOnlineFriends',
+  );
+
+  void showToast(var toastMsg){
+    Fluttertoast.showToast(
+        msg: toastMsg.toString(),
+        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
+        gravity: ToastGravity.BOTTOM,
+        toastLength: Toast.LENGTH_SHORT
+    );
+  }
+
+  var mediaQueryData;
+
   @override
   Widget build(BuildContext context) {
 
     print("First Once");
 
-    final mediaQueryData = MediaQuery.of(context);
+    mediaQueryData = MediaQuery.of(context);
     final iconButtonMargin = 10.0;
-    //print(selectedGameType);
-    //print(gameTypeWindow[selectedGameType]);
 
     return SingleChildScrollView(
         child: Column(
@@ -204,15 +371,6 @@ class _MainScreenState extends State<MainScreen> {
                     },
                   ),
                 ),
-                /*ValueListenableBuilder (
-                  valueListenable: currentIndex,
-                  child: Container(
-                      height: mediaQueryData.size.height/2,
-                      width: mediaQueryData.size.width * 0.6,
-                      color: Colors.blue,
-                      child: gameTypeWindow[selectedGameType]
-                  ),
-                ),*/
                 ValueListenableBuilder<gameType> (
                   valueListenable: currGT,
                   builder: (context, currentIndex, Widget child) {
@@ -230,7 +388,7 @@ class _MainScreenState extends State<MainScreen> {
                           borderRadius: new BorderRadius.all(new Radius.circular(10.0))
                         ),
                         //color: Colors.blue,
-                        child: Container(color: Colors.blue, child: gameTypeWindow[currGT.value])
+                        child: Container(color: Colors.blue, child: Center(child: gameTypeWindow[currGT.value]))
                       ),
                     );
                   }
@@ -259,43 +417,75 @@ class _MainScreenState extends State<MainScreen> {
             ),
             Container(
               //width and height
-              width: mediaQueryData.size.width * 0.6,
-              height: mediaQueryData.size.height * 0.07,
-              child: RaisedButton(
-                //shape:  ,
-                child: Text(
-                  "Play",
-                ),
+              width: mediaQueryData.size.width * 0.4,
+              height: mediaQueryData.size.height * 0.15,
+              child: NiceButton(
+                width: mediaQueryData.size.width * 0.4,
+                elevation: 1.0,
+                radius: 52.0,
+                background: Colors.lightGreenAccent,
+                textColor: Colors.black,
+                text: "Play",
                 onPressed: () async {
                   //TODO: whether the selectedGameType it open a InvitationMenu or navigates to a GameRoom
-                  switch(currGT.value) {
-                    case(gameType.singleGame) : {
-                      ///Call the findRoom function
-                      var data = {
-                        "playerId": userId,
-                        "gameType": "SingleGame",
-                        "playerToken": playerToken
-                      };
+                  if(!playBtnCalled) {
+                    switch (currGT.value) {
+                      case(gameType.singleGame) :
+                        {
+                          playBtnCalled = true;
+                          ///Call the findRoom function
+                          var data = {
+                            "playerId": userId,
+                            "gameType": "SingleGame",
+                            "playerToken": userToken
+                          };
 
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => LoadingScreen())
-                      );
-                      print("Loading screen");
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => LoadingScreen())
+                          );
+                          print("Loading screen");
 
-                      await callFindRoom(data);
+                          playBtnCalled = false;
 
-                      break;
-                    }
-                    case(gameType.teamGame) : {
-                      //Require a invitation
-                      //Request teamGameRoom with a parther
-                      //Get the id of the room
-                      //Navigate to a room
-                      break;
-                    }
-                    default : {
-                      break;
+                          await callFindRoom(data);
+
+                          break;
+                        }
+                      case(gameType.teamGame) :
+                        {
+
+                          var result = (await callGetOnlineFriends.call({"userId": userId})).data;
+
+                          List<Widget> friends = new List<Widget>();
+
+                          for(int i = 0; i < result.length; i++) {
+                            friends.add(drawFriendToInvite(result[i]["name"], userId, mediaQueryData.size.width * 0.5, mediaQueryData.size.height * 0.2));
+                          }
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Center(child: Text("Invite a friend")),
+                                content: Container(
+                                  width: mediaQueryData.size.width * 0.5,
+                                  height: mediaQueryData.size.height * 0.6,
+                                  child: ListView(
+                                    scrollDirection: Axis.vertical,
+                                    children: friends
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                          break;
+                        }
+                      default :
+                        {
+                          break;
+                        }
                     }
                   }
                 },
@@ -303,6 +493,40 @@ class _MainScreenState extends State<MainScreen> {
             )
           ]
         ),
+    );
+  }
+
+  Widget drawFriendToInvite(String username, String id, double width, double heigth) {
+    return Container(
+      width: width,
+      height: heigth,
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: width * 0.8,
+            child: Text(
+              username
+            ),
+          ),
+          Container(
+            width: width * 0.2,
+            child: IconButton(
+              icon: Icon(Icons.add),
+              onPressed: () {
+                var temp = {
+                  "senderName": ProfileData.name,
+                  "senderId": userId,
+                  "friendId": id
+                };
+
+                callSendTeamGameInvitation.call(temp);
+
+                showToast("Invitation sent");
+              },
+            ),
+          )
+        ],
+      ),
     );
   }
 }
