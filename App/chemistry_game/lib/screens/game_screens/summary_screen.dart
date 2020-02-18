@@ -40,29 +40,76 @@ class SummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final mediaQueryData = MediaQuery.of(context);
+    final mediaQueryWidth = mediaQueryData.size.width;
+    final mediaQueryHeight = mediaQueryData.size.height;
+
     return Scaffold(
-      body: Column(
+      resizeToAvoidBottomInset: false,
+      body: Stack(
         children: <Widget>[
-          Center(child: Text("Summary")),
-          DataTable(
-            columns: [
-              DataColumn(label: Text("Place")),
-              DataColumn(label: Text("Name")),
-              DataColumn(label: Text("Points"))
-            ],
-            rows: getDataRows()
-          ),
-          Center(
-            child: RaisedButton(
-              child: Text("Go to Home"), //TODO: maybe change it to "Lobby"
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => HomeScreen())
-                );
-              },
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.05,
+              child: DecoratedBox(
+                position: DecorationPosition.background,
+                decoration: BoxDecoration(
+                    image: DecorationImage(
+                        image: AssetImage("images/background4.png"),
+                        fit: BoxFit.cover
+                    )
+                ),
+              ),
             ),
+          ),
+          Column(
+            children: <Widget>[
+              Container(
+                height: 0.1,
+              ),
+              Center(
+                child: Text(
+                  "Summary",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 30,
+                  ),
+                )
+              ),
+              Container(
+                width: mediaQueryWidth * 0.8,
+                height: mediaQueryHeight * 0.7,
+                decoration: BoxDecoration(
+                    border: new Border.all(
+                        color: Colors.black,
+                        width: 3.0,
+                        style: BorderStyle.solid
+                    ),
+                    borderRadius: new BorderRadius.all(new Radius.circular(10.0))
+                ),
+                child: DataTable(
+                    columns: [
+                      DataColumn(label: Text("Place")),
+                      DataColumn(label: Text("Name")),
+                      DataColumn(label: Text("Points"))
+                    ],
+                    rows: getDataRows()
+                ),
+              ),
+              Center(
+                child: RaisedButton(
+                  child: Text("Go to Home"), //TODO: maybe change it to "Lobby"
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => HomeScreen())
+                    );
+                  },
+                ),
+              )
+            ],
           )
         ],
       ),
