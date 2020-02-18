@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 // import {UUID} from '../node_modules/uuid-generator-ts';
 const uuidv4 = require('uuid/v4');
 import * as admin from 'firebase-admin';
+// import { firebaseConfig } from 'firebase-functions';
 // import { ResultStorage } from 'firebase-functions/lib/providers/testLab';
 // import { DataSnapshot } from 'firebase-functions/lib/providers/database';
 //import { DataSnapshot } from 'firebase-functions/lib/providers/database';
@@ -75,6 +76,13 @@ async function createRoom(data: any) {
 
 	console.log("Got Data");
 
+	const joinMsg = {
+		"notification": {
+			"title": "Join Room",
+			"body": "You joined a room"
+		}
+	};
+
 	switch (gameType) {
 		case "SingleGame":
 			const playerId = data.playerId ? data.playerId.toString() : "";
@@ -86,25 +94,17 @@ async function createRoom(data: any) {
 			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 
 			console.log("Token: " + playerToken);
-					await admin.messaging().subscribeToTopic(playerToken, roomId.toString())
-					.then(function(response) {
-						console.log('Successfully subscribed to topic:', response);
-						//console.log('Successfully subscribed to topic:', response.errors[0].error);
-					})
-					.catch(function(error) {
-						console.log('Error subscribing to topic:', error);
-					});
+			await admin.messaging().subscribeToTopic(playerToken, roomId.toString())
+				.then(async function(response) {
+					console.log('Successfully subscribed to topic:', response);
+					await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(playerToken)});
+					//console.log('Successfully subscribed to topic:', response.errors[0].error);
+				})
+				.catch(function(error) {
+					console.log('Error subscribing to topic:', error);
+				});
 
-			const joinMsg = {
-				"notification": {
-					"title": "Join Room",
-					"body": "You joined a room"
-				}
-			};
-
-
-
-			await admin.messaging().sendToTopic(roomId.toString(), joinMsg)
+			await admin.messaging().sendToDevice(playerToken, joinMsg)
 				.then((response) => {
 					console.log("Successfully sent : " + response);
 				})
@@ -118,24 +118,57 @@ async function createRoom(data: any) {
 		case "TeamGame":
 			const firstPlayerId = data.firstPlayerId.toString();
 			const secondPlayerId = data.secondPlayerId.toString();
+			const firstPlayerToken = data.firstPlayerToken;
+
+			const secondPlayerToken = (await admin.firestore().collection("tokens").doc(secondPlayerId).get()).get("token");
 
 			//await roomDataRef.set({"teams": {"firstTeam": {[firstPlayerId]: {"points": 0}, [secondPlayerId] : {"points": 0}}}});
 			
-			await roomDataRef.set({"firstTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
-			await roomDataRef.update({"firstTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
+			await roomDataRef.set({"players": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+			
+			await roomDataRef.update({"firstTeamPlayerTemp": secondPlayerId});
+
+			// await roomDataRef.set({"firstTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+			// await roomDataRef.update({"firstTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 2});
 
 			//TODO: Subscribe to topic with tokens received from the players
 
-			/*admin.messaging().subscribeToTopic([firstPlayerId, secondPlayerId], roomId.toString())
-				.then(function(response) {
+			admin.messaging().subscribeToTopic(firstPlayerToken, roomId.toString())
+			.then(async function(response) {
+				console.log('Successfully subscribed to topic:', response);
+				await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(firstPlayerToken)});
+			})
+			.catch(function(error) {
+				console.log('Error subscribing to topic:', error);
+			});
+
+			admin.messaging().subscribeToTopic(secondPlayerToken, roomId.toString())
+				.then(async function(response) {
 					console.log('Successfully subscribed to topic:', response);
+					await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(secondPlayerToken)});
 				})
 				.catch(function(error) {
 					console.log('Error subscribing to topic:', error);
-				});*/
+				});
+			
+			await admin.messaging().sendToDevice(firstPlayerToken, joinMsg)
+				.then((response) => {
+					console.log("Successfully sent : " + response);
+				})
+				.catch((error) => {
+					console.log("Error with Messaging : " + error);
+				});
 
+			await admin.messaging().sendToDevice(secondPlayerToken, joinMsg)
+				.then((response) => {
+					console.log("Successfully sent : " + response);
+				})
+				.catch((error) => {
+					console.log("Error with Messaging : " + error);
+				});
+			
 			break;
 		default:
 			break;
@@ -239,7 +272,6 @@ exports.listenersToRoomFreeSeats = functions.firestore
 			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": true});
 
 			lastCardData = await getCardData(lastCard);
-			
 
 			var startMsg = {
 				"notification": {
@@ -253,10 +285,16 @@ exports.listenersToRoomFreeSeats = functions.firestore
 				}
 			}
 
-			await admin.messaging().sendToTopic(change.after.id.toString(), startMsg);
+			console.log("Id: " + change.after.id.toString());
+
+			await admin.messaging().sendToTopic(change.after.id.toString(), startMsg).then((response) => {
+				console.log("Resp: " + response);
+			})
+			.catch((error) => {
+				console.log("Error: " + error);
+			});
 
 			const roomTurnDataRef = admin.firestore().collection("roomsTurnData").doc(change.after.id.toString());
-
 			
 			await roomTurnDataRef.set({"finishedPlayers": 2});
 			await roomTurnDataRef.update({"nextTurn": -1});
@@ -273,6 +311,18 @@ exports.listenersToRoomFreeSeats = functions.firestore
 		}
 	}
 );
+
+async function sendFinishedPlayerMsg(playerToken: string)
+{
+	var msg = {
+		"notification": {
+			"title": "You Finished",
+			"body": "You have finished your cards!",
+		}
+	}
+
+	await admin.messaging().sendToDevice(playerToken, msg);
+};
 
 export const getPlayerCards = functions.https.onCall(async (data, context) => {
 	const playerId = data.playerId.toString();
@@ -519,7 +569,7 @@ exports.listenersToRoomTurnData = functions.firestore
 
 			await playerTurn(playerId.toString(), change.after.id);
 
-			const nextPlayer = nextTurn === 3 ? 0 : nextTurn + 1;
+			const nextPlayer = nextTurn === (roomData.get("players").length - 1) ? 0 : nextTurn + 1;
 
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": nextPlayer})
 			console.log("Next Turn : " + nextPlayer.toString());
@@ -535,30 +585,39 @@ exports.listenersToRoomTurnData = functions.firestore
 async function finishGame(roomId: string)
 {
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	const finishedPlayersCount = 1;
-	var finishedPlayerIds = new Array<string>();
-	const playersCount = 4;
 
-	for(let i = 0; i < finishedPlayersCount; i++)
+	const roomData = await roomDataRef.get();
+	const finishedPlayers = roomData.get("finishedPlayerIds");
+
+	for(let i = 0; i < finishedPlayers.length; i++)
 	{
-		finishedPlayerIds.push(await (await roomDataRef.get()).get("finishedPlayerIds")[i]);
-		await admin.firestore().collection("players").doc(finishedPlayerIds[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
+		await admin.firestore().collection("players").doc(finishedPlayers[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
 	}
 
 	console.log("After adding points");
 
 	var playerData: {points: number; name: string; id: string}[] = new Array<{points: number; name: string; id: string}>();
 
-	const roomData = await roomDataRef.get();
-
-	for(let i = 0; i < playersCount; i++)
+	for(let i = 0; i < finishedPlayers.length; i++)
 	{
-		const playerId = await (roomData).get("players")[i];
+		const playerId = finishedPlayers[i];
 		const playerRef = admin.firestore().collection("players").doc(playerId);
 		const playerDataTemp = await playerRef.get();
 		const playerName = (playerDataTemp).get("name");
 		const playerPoints = (playerDataTemp).get("points");
-		playerData.push({name: playerName, points: playerPoints, id: playerId})
+		playerData.push({name: playerName, points: playerPoints, id: playerId});
+	}
+
+	const players = roomData.get("players");
+
+	for(let i = 0; i < players.length; i++)
+	{
+		const playerId = players[i];
+		const playerRef = admin.firestore().collection("players").doc(playerId);
+		const playerDataTemp = await playerRef.get();
+		const playerName = (playerDataTemp).get("name");
+		const playerPoints = (playerDataTemp).get("points");
+		playerData.push({name: playerName, points: playerPoints, id: playerId});
 	}
 
 	console.log("After getting data: " + playerData);
@@ -570,11 +629,11 @@ async function finishGame(roomId: string)
 		else if(p1.points < p2.points) return 1;
 		else
 		{
-			if(p1.id === finishedPlayerIds[0])
+			if(p1.id === finishedPlayers[0])
 			{
 				return -1;
 			}
-			else if(p2.id === finishedPlayerIds[0])
+			else if(p2.id === finishedPlayers[0])
 			{
 				return 1;
 			}
@@ -583,9 +642,21 @@ async function finishGame(roomId: string)
 
 	});
 
+	const leftPlayers = roomData.get("leftPlayers");
+
+	for(let i = 0; i < leftPlayers.length; i++)
+	{
+		const playerId = players[i];
+		const playerRef = admin.firestore().collection("players").doc(playerId);
+		const playerDataTemp = await playerRef.get();
+		const playerName = (playerDataTemp).get("name");
+		const playerPoints = (playerDataTemp).get("points");
+		sortedPlayerData.push({name: playerName, points: playerPoints, id: playerId});
+	}
+
 	console.log("Ranking");
 
-	for(let i = 0; i < playersCount; i++)
+	for(let i = 0; i < 4; i++)
 	{
 		console.log(sortedPlayerData[i].name);
 	}
@@ -623,9 +694,9 @@ async function finishGame(roomId: string)
 			break
 	}
 
-	for(let i = 0; i < await (roomData).get("players").length; i++)
+	for(let i = 0; i < await sortedPlayerData.length; i++)
 	{
-		admin.firestore().collection("players").doc((roomData).get("players")[i]).delete()
+		admin.firestore().collection("players").doc(sortedPlayerData[i].id).delete()
 		.then(function() {
 			console.log("Document successfully deleted!");
 		}).catch(function(error) {
@@ -634,8 +705,6 @@ async function finishGame(roomId: string)
 	}
 
 	console.log("End");
-
-	//TODO: Delete the player docs
 }
 
 export const getProfileData = functions.https.onCall(async (data, context) => {
@@ -666,35 +735,28 @@ export const getProfileData = functions.https.onCall(async (data, context) => {
 async function updateRoom(data: any, roomId : string) {
 	const gameType = data.gameType.toString();
 	//const roomId = data.roomId.toString();
-	const playerToken = data.playerToken;
 
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
 	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);
-
-	const randomNumber = await uuidv4();
-	const second = await uuidv4();
-
-	console.log("First: " + randomNumber);
-	console.log("Second: " + second);
  
 	console.log("Before the gameType: " + roomId);
+
+	const joinMsg = {
+		"notification": {
+			"title": "Join Room",
+			"body": "You joined a room"
+		}
+	};
 
 	switch (gameType) {
 		case "SingleGame":
 			const playerId = data.playerId.toString();
-
+			const playerToken = data.playerToken;
+			
 			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 
 			console.log("Before sending message");
 
-			var joinRoomMsg = {
-				"notification": {
-					"title": "Join Room",
-					"body": "You joined a room"
-				}
-			}
-
-			await admin.messaging().sendToDevice(playerToken, joinRoomMsg);
 			await admin.messaging().subscribeToTopic(playerToken, roomId.toString()).then(async function(response) {
 				console.log('Successfully subscribed to topic:', response);
 				await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(playerToken)});
@@ -706,19 +768,67 @@ async function updateRoom(data: any, roomId : string) {
 
 			await roomRef.update({freeSeats : admin.firestore.FieldValue.increment(-1)});
 
+			await admin.messaging().sendToDevice(playerToken, joinMsg);
+
 			console.log("After sending message");
 
 			break;
 		case "TeamGame":
 			const firstPlayerId = data.firstPlayerId.toString();
 			const secondPlayerId = data.secondPlayerId.toString();
+			const firstPlayerToken = data.firstPlayerToken;
 
-			await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
-			await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
+			const secondPlayerToken = (await admin.firestore().collection("tokens").doc(secondPlayerId).get()).get("token");
+			
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion((await roomDataRef.get()).get("firstTeamPlayerTemp"))});
+
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
+
+			await roomDataRef.update({
+				"firstTeamPlayerTemp": admin.firestore.FieldValue.delete()
+			});
+			// await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
+			// await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 0});
 
-			//Send msgs to the players
+			//TODO: Subscribe to topic with tokens received from the players
+
+			admin.messaging().subscribeToTopic(firstPlayerToken, roomId.toString())
+				.then(async function(response) {
+					console.log('Successfully subscribed to topic:', response);
+					await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(firstPlayerToken)});
+				})
+				.catch(function(error) {
+					console.log('Error subscribing to topic:', error);
+				});
+
+			admin.messaging().subscribeToTopic(secondPlayerToken, roomId.toString())
+				.then(async function(response) {
+					console.log('Successfully subscribed to topic:', response);
+					await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(secondPlayerToken)});
+				})
+				.catch(function(error) {
+					console.log('Error subscribing to topic:', error);
+				});
+			
+			await admin.messaging().sendToDevice(firstPlayerToken, joinMsg)
+				.then((response) => {
+					console.log("Successfully sent : " + response);
+				})
+				.catch((error) => {
+					console.log("Error with Messaging : " + error);
+				});
+
+			await admin.messaging().sendToDevice(secondPlayerToken, joinMsg)
+				.then((response) => {
+					console.log("Successfully sent : " + response);
+				})
+				.catch((error) => {
+					console.log("Error with Messaging : " + error);
+				});
 
 			break;
 		default:
@@ -779,16 +889,17 @@ export const findRoom = functions.https.onCall(async (data, context) => {
 			{
 				console.log("In the room check");
 
+				foundRoom = true;
+
 				switch(gameType) {
 					case "SingleGame":
 						console.log("Update Room");
-						foundRoom = true;
 						await updateRoom(data, doc.id); //Check if the join was successful
 							
 						//join this room
 						return;
 					case "TeamGame":
-						//the 2 players join the room
+						await updateRoom(data, doc.id);
 						return;
 					default:
 				}
@@ -1104,11 +1215,26 @@ export const completeReaction = functions.https.onCall(async (data, context) => 
 			
 			const playerData = await admin.firestore().collection("players").doc(playerId).get();
 
+			var pointsUpdated = {
+				"notification": {
+					"title": "Points Updated",
+					"body": "Your points have been updated"
+				},
+				"data": {
+					"pointsToAdd": "20" //TODO: change it depending on the reaction
+				}
+			};
+
+			await admin.messaging().sendToDevice(playerToken, pointsUpdated);
+
 			if((playerData).get("elementCards").length <= 0)
 			{
 				const roomId = await (playerData).get("roomId");
 				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
 				await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+				await admin.firestore().collection("roomsData").doc(roomId).update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+
+				await sendFinishedPlayerMsg(playerToken);
 			}
 
 			//remove the cards from the player
@@ -1290,10 +1416,22 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 				await playerRef.update({"elementCards": admin.firestore.FieldValue.arrayRemove({name: cardName, uuid: cardUuid})});
 				// await playerRef.update({"elementCardsCount": admin.firestore.FieldValue.increment(-1)});
 
+				var placedCardMsg = {
+					"notification": {
+						"title": "Placed Card",
+						"body": "You have placed card successfully"
+					}
+				};
+
+				await admin.messaging().sendToDevice(playerToken, placedCardMsg);
+
 				if((await playerRef.get()).get("elementCards").length === 0)
 				{
 					await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
 					await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+					await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+
+					await sendFinishedPlayerMsg(playerToken);
 				}
 
 				const newLastCard = await getCardData(cardName);
@@ -1311,14 +1449,6 @@ export const placeCard = functions.https.onCall(async (data, context) => {
 				await admin.messaging().sendToTopic(roomId, newLastCardMsg);
 
 				//TODO: Send update player elementCards data;
-				var placedCardMsg = {
-					"notification": {
-						"title": "Placed Card",
-						"body": "You have placed card successfully"
-					}
-				};
-
-				await admin.messaging().sendToDevice(playerToken, placedCardMsg);
 
 				//await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedTurnPlayer": playerId});
 
@@ -1623,13 +1753,13 @@ async function dealing (data: any) {
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
 	// const playersRef = admin.firestore().collection("players");
 	const playerIds = [];
-	const elementCardsToDeal = 1;
+	const elementCardsToDeal = 2;
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	//let elementCards = ["H2", "O2", "Cu", "Cl", "Al", "Ar", "H2", "B", "Na", "H2", "H2", "H2", "H2", "Al", "Be"]; //TODO: get them from somewhere
+	let elementCards = ["H", "O2", "Cu", "Cl", "Al", "Ar", "H", "Na", "H", "H", "H", "H", "Al", "Be"]; //TODO: get them from somewhere
 	
-	const elementCards = await generateNewDeck();
+	// const elementCards = await generateNewDeck();
 	
 	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "NaCl", "NaCl", "NaCl", "NaCl", "NaCl"]; //TODO: get them from somewhere
 
@@ -1766,17 +1896,148 @@ export const getAllInvitations = functions.https.onCall(async (data, context) =>
 export const getAllFriends = functions.https.onCall(async (data, context) => {
 	const userId = data.userId;
 
-	let result = new Array<string>();
+	let result = new Array<{username: string, singleGameWins: string, teamGameWins: string}>();
 
 	const friends = (await admin.firestore().collection("friends").doc(userId).get()).get("friends");
 
 	for(let i = 0; i < friends.length; i++)
 	{
-		const email = (await admin.auth().getUser(friends[i])).email;
-		const username = email?.split("@")[0];
+		// const email = (await admin.auth().getUser(friends[i])).email;
+		// const username = email?.split("@")[0];
+		const tempUsers = (await admin.firestore().collection("users").doc(friends[i]).get());
 
-		if(username !== undefined) result.push(username);
+		result.push({username: tempUsers.get("username"),
+						singleGameWins: tempUsers.get("singleGameWins").toString(),
+						teamGameWins: tempUsers.get("teamGameWins").toString()});
+
+		// if(username !== undefined) result.push(username);
 	}
 
 	return result;
+})
+
+export const getTopTen = functions.https.onCall(async (data, context) => {
+	const sortedBy = data.sortedBy;
+
+	let resultData = new Array<{name: string, wins: number}>();
+
+	await admin.firestore().collection("users").orderBy(sortedBy.toString(), "desc").limit(10).get()
+		.then(function (querySnapshot)  {
+			querySnapshot.docs.forEach(function(doc) {
+				if(doc.exists)
+				{
+					switch(sortedBy)
+					{
+						case("singleGameWins"):
+							resultData.push({name: doc.data().username, wins: doc.data().singleGameWins});
+							break;
+						case("teamGameWins"):
+							resultData.push({name: doc.data().username, wins: doc.data().teamGameWins});
+							break;
+					}
+
+					
+				}
+			})
+		})
+		.catch(function(error) {
+			console.log("Error getting documents: ", error);
+		});
+	
+	return resultData;
+});
+
+export const sendChatMsgToEveryone = functions.https.onCall(async (data, context) => {
+	const msg = data.msg;
+	const senderName = data.senderName;
+	const senderId = data.senderId;
+
+	const senderTopic = (await admin.firestore().collection("players").doc(senderId).get()).get("roomId");
+
+	var msgToSend = {
+		"notification": {
+			"title": "Chat Msg"
+		},
+		"data": {
+			"sender": senderName,
+			"msg": msg
+		}
+	}
+
+	await admin.messaging().sendToTopic(senderTopic, msgToSend);
+});
+
+export const updateCurrToken = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+	const userToken = data.userToken;
+
+	await admin.firestore().collection("tokens").doc(userId).set({"token": userToken});
+});
+
+export const sendTeamGameInvitation = functions.https.onCall(async (data, context) => {
+	const senderName = data.senderName;
+	const senderId = data.senderId;
+	const friendId = data.friendId;
+
+	const friendToken = await (await admin.firestore().collection("tokens").doc(friendId).get()).get("token");
+
+	var msg = {
+		"notification": {
+			"title": "Team Invitation",
+		},
+		"data": {
+			"senderName": senderName,
+			"senderId": senderId,
+		}
+	};
+
+	await admin.messaging().sendToDevice(friendToken, msg);
+	//TODO: get the token from somewhere
+});
+
+export const getOnlineFriends = functions.https.onCall(async (data, context) => {
+	const userId = data.userId;
+
+	let result = new Array<{name: string, id: string}>();
+
+	const friends = (await admin.firestore().collection("friends").doc(userId).get()).get("friends");
+
+	for(let i = 0; i < friends.length; i++)
+	{
+		const user = (await admin.auth().getUser(friends[i]));
+		
+		const email = user.email;
+		const username = email?.split("@")[0];
+
+		const id = user.uid;
+
+		if(username !== undefined) result.push({name: username, id: id});
+	}
+
+	return result;
+})
+
+export const acceptTeamInvitation = functions.https.onCall(async (data, context) => {
+	const receiverId = data.receiverId;
+	const receiverToken = (await admin.firestore().collection("tokens").doc(receiverId).get()).get("token");
+	const senderName = data.senderName;
+
+	var teamInvitationAcceptedMsg = {
+		"notification": {
+			"title": "Team Invation Accepted",
+			"body": senderName + " accepted your invitation!"
+		},
+	}
+
+	await admin.messaging().sendToDevice(receiverToken, teamInvitationAcceptedMsg);
+})
+
+export const addLeftPlayer = functions.https.onCall(async (data, context) => {
+	const playerId = data.playerId;
+	const roomId = data.roomId;
+
+	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+
+	await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+	await roomDataRef.update({"leftPlayers": admin.firestore.FieldValue.arrayUnion(playerId)});
 })
