@@ -357,7 +357,7 @@ class AuthenticateState extends State<Authenticate> {
                     try {
                       dynamic result = await _auth.registerWithEmailAndPassword(username + "@domain.com", password);
                       print(result.uid);
-                      DatabaseService(result.uid).configureUser(username);
+                      DatabaseService(result.uid).configureUser(username, email);
                       Navigator.pop(context);
                     }
                     catch(error) {

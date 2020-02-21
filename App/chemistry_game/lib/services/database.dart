@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chemistry_game/models/User.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class DatabaseService {
 
@@ -9,25 +10,20 @@ class DatabaseService {
 
   final CollectionReference usersCollection = Firestore.instance.collection("users");
 
-  Future<void> configureUser(String username) async {
-    return await usersCollection.document(uid).setData({
-      'username': username,
-      'singleGameWins': 0,
-      'teamGameWins': 0
-      //TODO :  add friends field by userId
-    });
-  }
+  Future<void> configureUser(String username, String email) async {
 
-  //Increase Single Game Wins by 1
-  //Increase Team Game Wins by 1
-  //Add friends
-  //Delete friends
-
-  UserData userDataFromSnapshot(DocumentSnapshot snapshot) {
-    return UserData(
-      username: snapshot.data['username'],
-      singleGameWins: snapshot.data['singleGameWins'],
-      teamGameWins: snapshot.data['teamGameWins']
+    final HttpsCallable updateUser = CloudFunctions.instance.getHttpsCallable(
+      functionName: 'updateUser',
     );
+
+    var user = {
+      "id" : uid,
+      "username" : username,
+      'singleGameWins': 0,
+      'teamGameWins': 0,
+      "email:": email
+    };
+
+    await updateUser.call(user);
   }
 }
