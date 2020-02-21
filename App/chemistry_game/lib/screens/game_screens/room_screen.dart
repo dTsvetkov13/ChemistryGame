@@ -263,6 +263,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               for(int i = 0; i < fieldPlayers.length; i++) {
                 print("in loop");
                 if(fieldPlayers[i].name == msgSender) {
+                  print("Sender: " + msgSender);
+                  print("Last message: " + msg);
                   fieldPlayers[i].lastMessage = msg.toString();
                   break;
                 }
@@ -532,7 +534,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
                             var data = {
                               "msg": value,
-                              "senderName": "Minzuhar", ///TODO: change it to player.name
+                              "senderName": "Misho", ///TODO: change it to player.name
                               "senderId": player.id
                             };
 
@@ -580,9 +582,11 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                           Row(
                             children: <Widget>[
                               Icon(Icons.message),
-                              Text(
-                                ": " + fieldPlayers[2].lastMessage
-                              ),
+                              Flexible(
+                                child: Text(
+                                    ": " + fieldPlayers[2].lastMessage
+                                ),
+                              )
                             ],
                           )
                         ],
@@ -667,13 +671,15 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
                           ],
                         ),
-                        Row(
-                          children: <Widget>[
-                            Icon(Icons.message),
-                            Text(
-                                ": " + fieldPlayers[1].lastMessage
-                            ),
-                          ],
+                        Flexible(
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.message),
+                              Text(
+                                  ": " + fieldPlayers[1].lastMessage
+                              ),
+                            ],
+                          ),
                         )
                       ],
                     ),
@@ -707,7 +713,15 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                             if(!calledFunction && playerOnTurn == playerId) {
                               calledFunction = true;
                               showToast("wait...");
-                              await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken});
+                              var cardData = (await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken})).data;
+
+                              print("Deck card: " + cardData);
+                              //player.addElementCard(ElementCard(name: cardDataSplitted[0], group: cardDataSplitted[1], period: int.parse(cardDataSplitted[2])));
+                              player.addElementCard(ElementCard.fromString(cardData.toString()));
+                              calledFunction = false;
+                              setState(() {
+                                listViewStartingIndex = listViewStartingIndex;
+                              });
                             }
                             else
                             {
@@ -854,8 +868,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                           Row(
                             children: <Widget>[
                               Icon(Icons.message),
-                              Text(
-                                  ": " + fieldPlayers[0].lastMessage
+                              Flexible(
+                                child: Text(
+                                    ": " + fieldPlayers[0].lastMessage
+                                ),
                               ),
                             ],
                           )
@@ -951,7 +967,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Text("Elements"),
+              child: Flexible(child: Text("Elements")),
               onPressed: () {
                 setState(() {
                   print("Element");
@@ -964,7 +980,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Text("Compounds"),
+              child: Flexible(
+                child: Text("Compounds"),
+              ),
               onPressed: () {
                 setState(() {
                   print("Reaction");
@@ -977,7 +995,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Text("Accelerations"),
+              child: Flexible(child: Text("Accelerations")),
               onPressed: () {
                 showToast("We work on Accelerations");
                 //TODO: set to AccelerationCards
@@ -1203,6 +1221,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         var dataToSend = {
           "cardUuid": data.uuid,
           "playerId": playerId,
+          "cardName": data.name.toString(),
           "roomId": roomId,
           "playerToken": playerToken,
         };
@@ -1211,7 +1230,23 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
         print("Place card: " + data.uuid + " : " + data.name);
 
-        await callPlaceCard.call(dataToSend);
+        var isPlaced = (await callPlaceCard.call(dataToSend)).data;
+
+        if(isPlaced){
+          toastMsg = "You have placed card successfully";
+          showToast(toastMsg);
+          player.removeElementCard(cardToRemove.name, cardToRemove);
+          print(cardToRemove.name);
+          calledFunction = false;
+          setState(() {
+            listViewStartingIndex = listViewStartingIndex;
+          });
+        }
+        else {
+          toastMsg = "The group and the period do not coincide!";
+          showToast(toastMsg);
+          calledFunction = false;
+        }
       },
 
       onLeave: (data) {
