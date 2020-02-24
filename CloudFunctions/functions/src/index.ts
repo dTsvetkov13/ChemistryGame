@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions';
 // import {UUID} from '../node_modules/uuid-generator-ts';
 const uuidv4 = require('uuid/v4');
 import * as admin from 'firebase-admin';
+import { testFunction } from './test';
+import { updateUser1 } from './updateUser';
 // import { firebaseConfig } from 'firebase-functions';
 // import { ResultStorage } from 'firebase-functions/lib/providers/testLab';
 // import { DataSnapshot } from 'firebase-functions/lib/providers/database';
@@ -17,63 +19,14 @@ admin.initializeApp({
   databaseURL: "https://chemistrygame-cd3a6.firebaseio.com"
 });
 
-export const updateUser = functions.https.onCall(async (data, context) => {
-	const id = data.id ? data.id : null;
-	const username = data.username ? data.username.toString() : null;
-	const singleGameWins = (data.singleGameWins || data.singleGameWins === 0) ? data.singleGameWins : null;
-	const teamGameWins = (data.teamGameWins || data.singleGameWins === 0)? data.teamGameWins : null;
-	const email = data.email;
+export const testFunction1 = testFunction;
 
-	if(id === null) {
-		console.log("Id is null!");
-		return "Invalid id";
-	} 
-	
-
-	if(username !== null) {
-		await admin.firestore().collection("users").doc(id.toString()).set({"username" : username});
-		console.log("Username success");
-	}
-	else {
-		console.log("Username = null");
-	}
-
-	if(email !== null) {
-		await admin.firestore().collection("users").doc(id.toString()).update({"email" : email});
-		console.log("Email success");
-	}
-	else {
-		console.log("Email = null");
-	}
-	
-	if(singleGameWins !== null) {
-		await admin.firestore().collection("users").doc(id.toString()).update({"singleGameWins" : singleGameWins});
-		console.log("SingleGameWins success");
-	}
-	else {
-		console.log("Invalid singleGameWins");
-	}
-	
-	if(teamGameWins !== null) {
-		await admin.firestore().collection("users").doc(id.toString()).update({"teamGameWins" : teamGameWins});
-		console.log("TeamGameWins success");
-	}
-	else {
-		console.log("Invalid teamGameWins");
-	}
-
-	console.log("Successful");
-	return "Successful";
-})
+export const updateUser = updateUser1;
 
 // export const createRoom = functions.https.onCall(async (data, context) => {
 async function createRoom(data: any) {
 	const gameType = data.gameType ? data.gameType.toString() : "SingleGame"; //improve here
 
-	// const roomId = new UUID().getDashFreeUUID();
-	// const roomId = uuidv4();
-
-	// const roomId = data.roomId; //TODO : create UUID
 	const roomId = await uuidv4();
 
 	const roomRef = admin.firestore().collection("rooms").doc(roomId.toString());
@@ -1739,6 +1692,11 @@ export const getAllFriends = functions.https.onCall(async (data, context) => {
 	let result = new Array<{username: string, singleGameWins: string, teamGameWins: string}>();
 
 	const friends = (await admin.firestore().collection("friends").doc(userId).get()).get("friends");
+
+	if(friends === undefined)
+	{
+		return result;
+	}
 
 	for(let i = 0; i < friends.length; i++)
 	{
