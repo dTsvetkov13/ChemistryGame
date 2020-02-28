@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-//https://us-central1-chemistrygame-cd3a6.cloudfunctions.net/fillTheRoomWithFictitiousPlayers
+//https://us-central1-chemistrygame-cd3a6.cloudfunctions.net/fillTheRoomWithFictitiousPlayers/addMessage?roomId=
 export const fillTheRoomWithFictitiousPlayers1 = functions.https.onRequest(async (req, resp) => {
 	const roomId = req.query.roomId;
 	const gameType = await (await admin.firestore().collection("rooms").doc(roomId).get()).get("gameType");
