@@ -1,3 +1,4 @@
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -98,6 +99,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
 
+    var theme = Theme.of(context);
+
     void drawInvitations(double width, double height) async {
 
       var data = {
@@ -118,59 +121,59 @@ class _FriendsScreenState extends State<FriendsScreen> {
       {
         print(invitations[i]);
         users.add(
-            Container(
-              width: width,
-              height: height * 0.2,
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: width * 0.6,
-                    height: height * 0.2,
-                    child: Center(
-                      child: Text(
-                          invitations[i].toString()
-                      ),
-                    ),
-                    color: Colors.blueGrey,
-                  ),
-                  Container(
-                    width: width * 0.2,
-                    height: height * 0.2,
-                    child: IconButton(
-                      icon: Icon(Icons.check),
-                      color: Colors.green,
-                      onPressed: () {
-                        print(invitations[i]);
-                        var data = {
-                          "friendUsername": invitations[i],
-                          "userId": userId
-                        };
-
-                        callAcceptInvitation.call(data);
-
-                      },
+          Container(
+            width: width,
+            height: height * 0.2,
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: width * 0.6,
+                  height: height * 0.2,
+                  child: Center(
+                    child: Text(
+                        invitations[i].toString()
                     ),
                   ),
-                  Container(
-                    width: width * 0.2,
-                    height: height * 0.2,
-                    child: IconButton(
-                      icon: Icon(Icons.delete),
-                      color: Colors.red,
-                      onPressed: () {
-                        var data = {
-                          "friendUsername": invitations[i],
-                          "userId": userId
-                        };
+                  color: Colors.blueGrey,
+                ),
+                Container(
+                  width: width * 0.2,
+                  height: height * 0.2,
+                  child: IconButton(
+                    icon: Icon(Icons.check),
+                    color: Colors.green,
+                    onPressed: () {
+                      print(invitations[i]);
+                      var data = {
+                        "friendUsername": invitations[i],
+                        "userId": userId
+                      };
 
-                        callDeclineInvitation.call(data);
-                      },
-                    ),
-                  )
-                ],
-              ),
-              color: Colors.yellowAccent,
-            ));
+                      callAcceptInvitation.call(data);
+
+                    },
+                  ),
+                ),
+                Container(
+                  width: width * 0.2,
+                  height: height * 0.2,
+                  child: IconButton(
+                    icon: Icon(Icons.delete),
+                    color: Colors.red,
+                    onPressed: () {
+                      var data = {
+                        "friendUsername": invitations[i],
+                        "userId": userId
+                      };
+
+                      callDeclineInvitation.call(data);
+                    },
+                  ),
+                )
+              ],
+            ),
+            color: Colors.yellowAccent,
+          ));
       }
 
       showDialog(
@@ -240,10 +243,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
             child: NiceButton(
               elevation: 1.0,
               radius: 52.0,
-              background: Colors.white70,
+              background: theme.buttonColor,
               textColor: Colors.black,
-              width: mediaQueryWidth * 0.3,
-              text: "Show invitations",
+//              width: mediaQueryWidth * 0.3,
+              text: "Invitations",
               onPressed: () async {
                 drawInvitations(mediaQueryWidth * 0.8, mediaQueryHeight * 0.7);
               },
@@ -260,7 +263,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         height: height,
         decoration: BoxDecoration(
           border: new Border.all(
-              color: Colors.blue,
+              color: primaryGreen,
               width: 5.0,
               style: BorderStyle.solid
           ),
@@ -315,9 +318,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
               child: NiceButton(
                 elevation: 1.0,
                 radius: 52.0,
-                background: Colors.white70,
+                background: theme.buttonColor,
                 textColor: Colors.black,
-                width: mediaQueryWidth * 0.2,
+//                width: mediaQueryWidth * 0.2,
                 text: "Invite a friend",
                 onPressed: () async {
                   print(username);
