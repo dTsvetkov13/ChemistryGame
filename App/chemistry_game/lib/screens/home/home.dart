@@ -45,13 +45,34 @@ class HomeScreenState extends State<HomeScreen> {
   var singleGameWins = "";
   var teamGameWins = "";
 
-  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getProfileData',
+  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllFriends',
+  );
+
+  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllInvitations',
+  );
+
+  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getTopTen',
+  );
+
+  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'updateCurrToken',
+  );
+
+  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'sendTeamGameInvitation',
+  );
+
+  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getOnlineFriends',
   );
 
   @override
   Future<void> initState() {
     super.initState();
+    print("HOME INIT");
     _firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) {
           var title = message["notification"]["title"];
@@ -71,6 +92,38 @@ class HomeScreenState extends State<HomeScreen> {
     _firebaseMessaging.getToken().then((token) async {
       userToken = token;
       print("Token : $userToken");
+
+      User tempUser = await _auth.user.first;
+
+      var data = {
+        "userId": tempUser.uid,
+        "userToken": userToken
+      };
+
+      callUpdateCurrToken.call(data);
+
+      print("Token : $userToken");
+
+      data = {
+        "userId": tempUser.uid
+      };
+
+//      callGetAllFriends.call(data);
+//      callGetAllInvitations.call(data);
+
+      data = {
+        "sortedBy": "singleGameWins"
+      };
+
+//      callGetTopTen.call(data);
+
+      data = {
+        "sortedBy": "teamGameWins"
+      };
+
+//      callGetTopTen.call(data);
+
+//      callGetOnlineFriends.call({"userId": tempUser.uid});
     });
   }
 
@@ -95,7 +148,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     List<Widget> _widgetOptions = <Widget>[
       MainScreen(userId: user.uid),
-      ProfileScreen(userId: user.uid),
+//      ProfileScreen(userId: user.uid),
       FriendsScreen(userId: user.uid,),
       RankingScreen()
     ];
@@ -120,6 +173,8 @@ class HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    var theme = Theme.of(context);
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       endDrawer: Drawer(
@@ -137,7 +192,7 @@ class HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    color: theme.primaryColor,
                   ),
                 ),
               ),
@@ -157,15 +212,15 @@ class HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(context);
                 },
               ),
-              ListTile(
-                title: Text('Profile'),
-                onTap: () {
-                  setState(() {
-                    _selectedIndex = 1;
-                  });
-                  Navigator.pop(context);
-                },
-              ),
+//              ListTile(
+//                title: Text('Profile'),
+//                onTap: () {
+//                  setState(() {
+//                    _selectedIndex = 1;
+//                  });
+//                  Navigator.pop(context);
+//                },
+//              ),
               ListTile(
                 title: Row(
                   children: <Widget>[
@@ -177,7 +232,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 2;
+                    _selectedIndex = 1;
                   });
                   Navigator.pop(context);
                 },
@@ -193,7 +248,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 3;
+                    _selectedIndex = 2;
                   });
                   Navigator.pop(context);
                 },
@@ -208,6 +263,9 @@ class HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 onTap: () async {
+                  ProfileData.name = "";
+                  ProfileData.teamGameWins = "";
+                  ProfileData.singleGameWins = "";
                   await _auth.signOut();
                 },
               )
