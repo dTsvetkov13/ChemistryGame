@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:chemistry_game/models/User.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 class DatabaseService {
@@ -21,7 +20,7 @@ class DatabaseService {
       "username" : username,
       'singleGameWins': 0,
       'teamGameWins': 0,
-      "email:": email
+      "email": email
     };
 
     await updateUser.call(user);
