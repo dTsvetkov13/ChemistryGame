@@ -14,12 +14,12 @@ export const placeCard1 = functions.https.onCall(async (data, context) => {
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
 	// const playerData = await playerRef.get();
 	// const elementCardsCount = playerData.get("elementCards").length;
-	// const roomData = await roomDataRef.get();
+	const roomData = await roomDataRef.get();
 	const roomTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
 
-	// const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
+	const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
 
-	/*if(!(playerId === await roomData.get("players")[playerOnTurnIndex]))
+	if(!(playerId === await roomData.get("players")[playerOnTurnIndex]))
 	{
 		var notYourTurnMsg = {
 			"notification": {
@@ -30,7 +30,7 @@ export const placeCard1 = functions.https.onCall(async (data, context) => {
 
 		await admin.messaging().sendToDevice(playerToken, notYourTurnMsg);
 		return;
-	}*/
+	}
 
 	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
 

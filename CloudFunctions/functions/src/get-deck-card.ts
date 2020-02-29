@@ -6,12 +6,16 @@ export const getDeckCard1 = functions.https.onCall(async(data, context) => {
 	const playerId = data.playerId;
 	const roomId = data.roomId;
 	// const playerToken = data.playerToken;
+	
 	const roomsTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
-	//const playerOnTurnIndex = await (await roomsTurnDataRef.get()).get("nextTurn");
+	
 	const roomCardsDataRef = admin.firestore().collection("roomCardsData").doc(roomId);
 	const roomCardsData = await roomCardsDataRef.get();
-	//if(playerId === (await roomsData.get("players")[playerOnTurnIndex]))
-	//{		
+	const roomsData = await admin.firestore().collection("roomsData").doc(roomId).get();
+	const playerOnTurnIndex = await (await roomsTurnDataRef.get()).get("nextTurn");
+
+	if(playerId === (await roomsData.get("players")[playerOnTurnIndex]))
+	{		
 		let cardToGiveName;
 
 		if(!(await roomCardsData.get("deck").length > 0))
@@ -45,5 +49,8 @@ export const getDeckCard1 = functions.https.onCall(async(data, context) => {
 
 		// await admin.messaging().sendToDevice(playerToken, getDeckCardMsg);
 		return cardToGiveData;
-	//}
+	}
+	else {
+		return false;
+	}
 })
