@@ -1,7 +1,9 @@
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/services/database.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:nice_button/nice_button.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -36,6 +38,12 @@ class AuthenticateState extends State<Authenticate> {
 
   final ScrollController controller = ScrollController();
 
+  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getProfileData',
+  );
+
+  bool _saving = false;
+
   @override
   Widget build(BuildContext context) {
 
@@ -47,50 +55,45 @@ class AuthenticateState extends State<Authenticate> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.05,
-                child: DecoratedBox(
-                  position: DecorationPosition.background,
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: AssetImage("images/background4.png"),
-                          fit: BoxFit.cover
-                      )
+        body: ModalProgressHUD(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.05,
+                  child: DecoratedBox(
+                    position: DecorationPosition.background,
+                    decoration: BoxDecoration(
+                        image: DecorationImage(
+                            image: AssetImage("images/background4.png"),
+                            fit: BoxFit.cover
+                        )
+                    ),
                   ),
                 ),
               ),
-            ),
-            Center(
-            child: Container(
-              width: width * 0.4,
-              height: height * 0.7,
+              Center(
+              child: Container(
+                width: width * 0.4,
+                height: height * 0.7,
 //            color: Colors.blueGrey,
-              child: Center(
-                  child: ListView(
-                    scrollDirection: Axis.vertical,
-                    children: <Widget> [
-                      ValueListenableBuilder(
-                        valueListenable: error,
-                        child: Text(error.value),
-                        builder: (BuildContext context, String value , Widget child) {
-                          return Text(error.value);
-                        }
-                      ),
-                      loginStateChangeButton(buttonWidth, buttonHeight),
-                      loginArea(width * 0.4, height * 0.35),
-                      registerStateChangeButton(buttonWidth, buttonHeight),
-                      registerArea(width * 0.4, height * 0.35),
-                      informationStateChangeButton(buttonWidth, buttonHeight),
-                      //TODO: add informationArea
-                    ]
-                  )
+                child: Center(
+                    child: ListView(
+                      scrollDirection: Axis.vertical,
+                      children: <Widget> [
+                        loginStateChangeButton(buttonWidth, buttonHeight),
+                        loginArea(width * 0.4, height * 0.35),
+                        registerStateChangeButton(buttonWidth, buttonHeight),
+                        registerArea(width * 0.4, height * 0.35),
+                        informationStateChangeButton(buttonWidth, buttonHeight),
+                        //TODO: add informationArea
+                      ]
+                    )
+                ),
               ),
             ),
-          ),
-          ]
+            ]
+          ), inAsyncCall: _saving
         )
     );
 
@@ -126,18 +129,16 @@ class AuthenticateState extends State<Authenticate> {
     return AnimatedCrossFade(
       duration: Duration(seconds: 1),
       firstChild: Container(width: 0, height: 0,),
-      secondChild: loginForm(height),
+      secondChild: loginForm(),
       crossFadeState: loginAreaFirstChild ? CrossFadeState.showFirst : CrossFadeState.showSecond,
     );
   }
 
-  Form loginForm(double height) {
+  Form loginForm() {
     return Form(
       key: _loginFormKey,
       child: Container(
-        height: height,
-        child: ListView(
-          scrollDirection: Axis.vertical,
+        child: Column(
           children: <Widget>[
             TextFormField(
               keyboardType: TextInputType.text,
@@ -187,6 +188,23 @@ class AuthenticateState extends State<Authenticate> {
                   )
               ),
             ),
+            ValueListenableBuilder(
+                valueListenable: error,
+                child: Text(
+                  error.value,
+                  style: TextStyle(
+                    color: Colors.red
+                  ),
+                ),
+                builder: (BuildContext context, String value , Widget child) {
+                  return Text(
+                    error.value,
+                    style: TextStyle(
+                        color: Colors.red
+                    ),
+                  );
+                }
+            ),
             RaisedButton(
               child: Text(
                 'Login',
@@ -195,10 +213,13 @@ class AuthenticateState extends State<Authenticate> {
               onPressed: () async {
                 if(_loginFormKey.currentState.validate()){
                   try {
+                    _saving = true;
                     dynamic result = await _auth.signInWithEmailAndPassword(username + "@domain.com", password);
+                    _saving = false;
                     print(result.uid);
                   }
                   catch(error) {
+                    _saving = false;
                     print(error.code.toString());
                     switch (error.code) {
                       case "ERROR_INVALID_EMAIL":
@@ -261,18 +282,16 @@ class AuthenticateState extends State<Authenticate> {
     return AnimatedCrossFade(
       duration: Duration(seconds: 1),
       firstChild: Container(width: 0, height: 0,),
-      secondChild: registerForm(height, width),
+      secondChild: registerForm(width),
       crossFadeState: registerAreaFirstChild ? CrossFadeState.showFirst : CrossFadeState.showSecond,
     );
   }
 
-  Form registerForm(double height, double width) {
+  Form registerForm(double width) {
     return Form(
       key: _registerFormKey,
       child: Container(
-        height: height,
-        child: ListView(
-          scrollDirection: Axis.vertical,
+        child: Column(
           children: <Widget>[
             TextFormField(
               keyboardType: TextInputType.text,
@@ -345,6 +364,23 @@ class AuthenticateState extends State<Authenticate> {
                   )
               ),
             ),
+            ValueListenableBuilder(
+                valueListenable: error,
+                child: Text(
+                  error.value,
+                  style: TextStyle(
+                      color: Colors.red
+                  ),
+                ),
+                builder: (BuildContext context, String value , Widget child) {
+                  return Text(
+                    error.value,
+                    style: TextStyle(
+                        color: Colors.red
+                    ),
+                  );
+                }
+            ),
             NiceButton(
               width: width,
               elevation: 8.0,
@@ -355,12 +391,16 @@ class AuthenticateState extends State<Authenticate> {
                 onPressed: () async {
                   if(_registerFormKey.currentState.validate()){
                     try {
+                      _saving = true;
                       dynamic result = await _auth.registerWithEmailAndPassword(username + "@domain.com", password);
                       print(result.uid);
-                      DatabaseService(result.uid).configureUser(username, email);
+                      await DatabaseService(result.uid).configureUser(username, email);
+//                      await callGetProfileData({"userId": result.uid.toString()});
+                      _saving = false;
                       Navigator.pop(context);
                     }
                     catch(error) {
+                      _saving = false;
                       print(error);
                       switch (error.code) {
                         case "ERROR_EMAIL_ALREADY_IN_USE":
