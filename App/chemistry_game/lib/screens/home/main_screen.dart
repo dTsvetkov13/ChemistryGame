@@ -4,6 +4,7 @@ import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/profile_data.dart';
 import 'package:chemistry_game/screens/home/home.dart';
 import 'package:chemistry_game/screens/loading_screen.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/constants/text_styling.dart';
@@ -36,8 +37,8 @@ class _MainScreenState extends State<MainScreen> {
   _MainScreenState({this.userId});
 
   static Map<gameType, Widget> gameTypeWindow = {
-    gameType.singleGame: createGameWindow("Single Player"),
-    gameType.teamGame: createGameWindow("Multiplayer"),
+    gameType.singleGame: createGameWindow("Single Mode"),
+    gameType.teamGame: createGameWindow("Team Mode"),
   };
 
   static ValueNotifier<int> currentIndex = ValueNotifier<int>(0);
@@ -70,6 +71,33 @@ class _MainScreenState extends State<MainScreen> {
     functionName: 'acceptTeamInvitation',
   );
 
+  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getProfileData',
+  );
+
+  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllFriends',
+  );
+
+  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getAllInvitations',
+  );
+
+  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getTopTen',
+  );
+
+  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'updateCurrToken',
+  );
+
+  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'sendTeamGameInvitation',
+  );
+
+  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
+    functionName: 'getOnlineFriends',
+  );
 
   FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
@@ -97,12 +125,43 @@ class _MainScreenState extends State<MainScreen> {
               lastCard = message["data"]["lastCard"];
               playersNames = message["data"]["playersNames"];
 
-              callGetPlayerCards({"playerId": userId, "playerToken": userToken});
+              var receivedData = (await callGetPlayerCards({"playerId": userId})).data; //, "playerToken": userToken
+
+              var elementCards = receivedData["elementCards"];
+              var compoundCards = receivedData["compoundCards"];
+              playerName = receivedData["playerName"];
+
+              print("Element Cards: " + elementCards);
+              print("Compound Cards: " + compoundCards);
+              print(getPlayerNames(playersNames));
+
+              var playerNames = getPlayerNames(playersNames);
+
+              Player player = new Player(playerName, userId, elementCards, compoundCards);
+
+              var fieldPlayers = new List<FieldPlayer>();
+              playerNames.forEach((name) {
+                fieldPlayers.add(
+                    new FieldPlayer(name: name, cardsNumber: player.elementCards.length)
+                );
+              });
+
+              lastCard = lastCard.split(",");
+
+              ElementCard lastCardData = new ElementCard(name: lastCard[0], group: lastCard[1], period: int.parse(lastCard[2]));
+
+              Navigator.pop(context);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => BuildRoomScreen(roomId: roomId, playerId: userId, lastCardData: lastCardData,
+                    player: player, firebaseMessaging: _firebaseMessaging, fieldPlayers: fieldPlayers,))
+              );
+              await callReadyPlayer.call({"roomId": roomId});
               break;
             case("Join Room") :
 
               break;
-            case("Player Cards") :
+            case("Player Cards") : //Delete this case
               var elementCards = message["data"]["elementCards"];
               var compoundCards = message["data"]["compoundCards"];
               playerName = message["data"]["playerName"];
@@ -223,39 +282,16 @@ class _MainScreenState extends State<MainScreen> {
       userToken = token;
 
       var data = {
-        "userId": userId,
-        "userToken": userToken
-      };
-
-//      callUpdateCurrToken.call(data);
-
-      print("Token : $userToken");
-
-      data = {
-        "userId": userId
-      };
-
-//      callGetAllFriends.call(data);
-//      callGetAllInvitations.call(data);
-
-      data = {
-        "sortedBy": "singleGameWins"
-      };
-
-//      callGetTopTen.call(data);
-
-      data = {
-        "sortedBy": "teamGameWins"
-      };
-
-//      callGetTopTen.call(data);
-
-      data = {
         "userToken": userToken,
         "userId": userId
       };
 
-      callGetProfileData.call(data);
+      var received = (await callGetProfileData.call(data)).data;
+
+      ProfileData.name = received["userName"];
+      ProfileData.singleGameWins = received["singleGameWins"];
+      ProfileData.teamGameWins = received["teamGameWins"];
+      ProfileData.updated.value = !ProfileData.updated.value;
     });
   }
 
@@ -297,38 +333,10 @@ class _MainScreenState extends State<MainScreen> {
     return result;
   }
 
-  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getProfileData',
-  );
-
-  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getAllFriends',
-  );
-
-  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getAllInvitations',
-  );
-
-  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getTopTen',
-  );
-
-  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'updateCurrToken',
-  );
-
-  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'sendTeamGameInvitation',
-  );
-
-  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
-    functionName: 'getOnlineFriends',
-  );
-
   void showToast(var toastMsg){
     Fluttertoast.showToast(
         msg: toastMsg.toString(),
-        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
+        timeInSecForIos: 10,
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT
     );
@@ -338,6 +346,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    var theme = Theme.of(context);
 
     print("First Once");
 
@@ -381,14 +391,14 @@ class _MainScreenState extends State<MainScreen> {
                       child: Container (
                         decoration: BoxDecoration(
                           border: new Border.all(
-                            color: Colors.blue,
+                            color: theme.primaryColor,
                             width: 5.0,
                             style: BorderStyle.solid
                           ),
                           borderRadius: new BorderRadius.all(new Radius.circular(10.0))
                         ),
                         //color: Colors.blue,
-                        child: Container(color: Colors.blue, child: Center(child: gameTypeWindow[currGT.value]))
+                        child: Container(color: theme.primaryColor, child: Center(child: gameTypeWindow[currGT.value]))
                       ),
                     );
                   }
@@ -416,14 +426,18 @@ class _MainScreenState extends State<MainScreen> {
               ],
             ),
             Container(
+              height: mediaQueryData.size.height * 0.03,
+            ),
+            Container(
               //width and height
-              width: mediaQueryData.size.width * 0.4,
-              height: mediaQueryData.size.height * 0.15,
+//              width: mediaQueryData.size.width * 0.4,
+//              height: mediaQueryData.size.height * 0.15,
               child: NiceButton(
                 width: mediaQueryData.size.width * 0.4,
                 elevation: 1.0,
                 radius: 52.0,
-                background: Colors.lightGreenAccent,
+                background: theme.buttonColor,
+//                background: theme.buttonColor,
                 textColor: Colors.black,
                 text: "Play",
                 onPressed: () async {
