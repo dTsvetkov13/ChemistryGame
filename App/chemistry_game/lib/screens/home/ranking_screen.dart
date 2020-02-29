@@ -1,4 +1,5 @@
 
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -71,8 +72,6 @@ class _RankingScreenState extends State<RankingScreen> {
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
 
-
-
     Widget topBar() {
       return Container(
           width: mediaQueryWidth,
@@ -111,11 +110,11 @@ class _RankingScreenState extends State<RankingScreen> {
                     iconSize: 24,
                     elevation: 16,
                     style: TextStyle(
-                        color: Colors.deepPurple
+                        color: secondaryPink//Colors.deepPurple
                     ),
                     underline: Container(
                       height: 2,
-                      color: Colors.deepPurpleAccent,
+                      color: secondaryPink//Colors.deepPurpleAccent,
                     ),
                     onChanged: (String newValue) async {
                       String sortedBy = "";
@@ -163,9 +162,9 @@ class _RankingScreenState extends State<RankingScreen> {
         print(receivedData.value[i]);
         users.add(DataRow(
             cells: [
-              DataCell(Text((i+1).toString())),
-              DataCell(Text(receivedData.value[i]["name"])),
-              DataCell(Text(receivedData.value[i]["wins"].toString()))
+              DataCell(Text((i+1).toString(), style: TextStyle(fontWeight: FontWeight.bold),)),
+              DataCell(Text(receivedData.value[i]["name"], style: TextStyle(fontWeight: FontWeight.bold))),
+              DataCell(Text(receivedData.value[i]["wins"].toString(), style: TextStyle(fontWeight: FontWeight.bold)))
             ]
         ));//users.add(drawUser(mediaQueryWidth * 0.7, mediaQueryHeight * 0.2, receivedData.value[i]["name"], receivedData.value[i]["wins"].toString()));
       }
@@ -186,9 +185,9 @@ class _RankingScreenState extends State<RankingScreen> {
           children: <Widget>[
             DataTable(
               columns: [
-                DataColumn(label: Text("Place")),
-                DataColumn(label: Text("Name")),
-                DataColumn(label: Text("Wins"))
+                DataColumn(label: Text("Place", style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text("Name", style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text("Wins", style: TextStyle(fontWeight: FontWeight.bold)))
               ],
               rows: users
             )
