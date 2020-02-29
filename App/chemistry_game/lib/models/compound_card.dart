@@ -36,7 +36,7 @@ class CompoundCard extends card{
             height: height,
             color: Colors.blueGrey,
           ),
-          feedback: this != null ? this.draw(width, height) : Container(
+          feedback: this != null ? Material(child: this.draw(width, height)) : Container(
             width: width,
             height: height,
             color: Colors.blueGrey,

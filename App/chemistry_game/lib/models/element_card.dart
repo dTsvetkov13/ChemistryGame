@@ -1,12 +1,11 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
 class ElementCard extends card{
-//  TODO: add id - uuid
   String name;
   String group;
   int period;
+  bool usedInReaction = false;
 
   ElementCard({this.name, this.group, this.period}) {
     //TODO: check name for H, 0, I, etc... and change them to H2, etc
@@ -24,12 +23,13 @@ class ElementCard extends card{
     return Container(
       height: height,
       width: width,
+
       decoration: BoxDecoration(
           border: Border.all(
             color: Colors.black,
             width: width * 0.01
           ),
-
+          color: usedInReaction ? Colors.yellow : Colors.white,
       ),
       child: Column(
         children: <Widget>[
@@ -76,7 +76,7 @@ class ElementCard extends card{
         height: height,
         color: Colors.blueGrey,
       ),
-      feedback: this != null ? this.draw(width, height) : Container(
+      feedback: this != null ? Material(child: this.draw(width, height)) : Container(
         width: width,
         height: height,
         color: Colors.blueGrey,
@@ -100,7 +100,7 @@ class ElementCard extends card{
         height: height,
         color: Colors.blueGrey,
       ),
-      feedback: this != null ? this.draw(width, height) : Container(
+      feedback: this != null ? Material(child: this.draw(width, height)) : Container(
         width: width,
         height: height,
         color: Colors.blueGrey,
