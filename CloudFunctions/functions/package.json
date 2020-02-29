@@ -16,7 +16,9 @@
   "dependencies": {
     "firebase-admin": "^8.6.0",
     "firebase-functions": "^3.3.0",
-    "uuid-generator-ts": "^1.0.3"
+    "uuid": "^3.4.0",
+    "uuid-generator-ts": "^1.0.3",
+    "wolfram-alpha-api": "https://products.wolframalpha.com/api/libraries/javascript/wolfram-alpha-api-1.0.0-rc.1.tgz"
   },
   "devDependencies": {
     "tslint": "^5.12.0",
