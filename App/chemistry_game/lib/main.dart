@@ -1,3 +1,4 @@
+import 'package:chemistry_game/theme/style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -22,11 +23,8 @@ class MyApp extends StatelessWidget {
     return StreamProvider<User>.value(
       value: AuthService().user,
       child: MaterialApp(
-        title: 'Authention Menu',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
+        theme: appTheme(),
         //home: Wrapper(),
         home: Wrapper(),
       ),
