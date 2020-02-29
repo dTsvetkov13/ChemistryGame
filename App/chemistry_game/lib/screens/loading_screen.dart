@@ -1,6 +1,4 @@
 import 'package:chemistry_game/theme/colors.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 

@@ -15,13 +15,11 @@ class _WrapperState extends State<Wrapper> {
 
     final user = Provider.of<User>(context);
 
-    print('First user - $user');
-
     if(user == null) {
       return Authenticate();
     }
     else {
-      print('Second user - ${user.uid}');
+      print('user - ${user.uid}');
       return HomeScreen();
     }
   }

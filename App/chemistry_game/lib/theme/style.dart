@@ -21,11 +21,5 @@ ThemeData appTheme() {
     buttonTheme: ButtonThemeData(
       buttonColor: secondaryPurple,
     )
-//    primaryTextTheme: TextTheme(
-//      button: TextStyle(
-//        color: textColor,
-//        fontFamily: 'NormalText'
-//      )
-//    ),
   );
 }

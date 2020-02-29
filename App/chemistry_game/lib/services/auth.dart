@@ -52,7 +52,6 @@ class AuthService {
     } catch (error) {
       print(error.toString());
       throw(error);
-//      return null;
     }
   }
 

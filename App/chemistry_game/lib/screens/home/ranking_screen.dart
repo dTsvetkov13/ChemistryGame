@@ -1,11 +1,7 @@
-
 import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:chemistry_game/constants/text_styling.dart';
-import 'package:chemistry_game/models/element_card.dart';
-import 'package:chemistry_game/models/player.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class RankingScreen extends StatefulWidget {
@@ -43,14 +39,10 @@ class _RankingScreenState extends State<RankingScreen> {
     );
     _firebaseMessaging.getToken().then((token) async {
       playerToken = token;
-      print("Token : $playerToken");
-
       var data = {
         "sortedBy": "singleGameWins"
       };
-      print("Before data");
       receivedData.value = (await callGetTopTen.call(data)).data;
-      print(receivedData.value);
     });
   }
 
@@ -76,7 +68,6 @@ class _RankingScreenState extends State<RankingScreen> {
       return Container(
           width: mediaQueryWidth,
           height: mediaQueryHeight * 0.2,
-//        color: Colors.blueGrey,
           child: Row(
               children: <Widget> [
                 Container(
@@ -110,11 +101,11 @@ class _RankingScreenState extends State<RankingScreen> {
                     iconSize: 24,
                     elevation: 16,
                     style: TextStyle(
-                        color: secondaryPink//Colors.deepPurple
+                        color: secondaryPink
                     ),
                     underline: Container(
                       height: 2,
-                      color: secondaryPink//Colors.deepPurpleAccent,
+                      color: secondaryPink
                     ),
                     onChanged: (String newValue) async {
                       String sortedBy = "";
@@ -156,17 +147,14 @@ class _RankingScreenState extends State<RankingScreen> {
 
       List<DataRow> users = new List<DataRow>();
 
-//      users.add(drawUser(mediaQueryWidth * 0.7, mediaQueryHeight * 0.2, "Name", "Wins"));
-
       for(int i = 0; i < receivedData.value.length; i++) {
-        print(receivedData.value[i]);
         users.add(DataRow(
             cells: [
               DataCell(Text((i+1).toString(), style: TextStyle(fontWeight: FontWeight.bold),)),
               DataCell(Text(receivedData.value[i]["name"], style: TextStyle(fontWeight: FontWeight.bold))),
               DataCell(Text(receivedData.value[i]["wins"].toString(), style: TextStyle(fontWeight: FontWeight.bold)))
             ]
-        ));//users.add(drawUser(mediaQueryWidth * 0.7, mediaQueryHeight * 0.2, receivedData.value[i]["name"], receivedData.value[i]["wins"].toString()));
+        ));
       }
 
       return Container(
@@ -202,8 +190,6 @@ class _RankingScreenState extends State<RankingScreen> {
         ValueListenableBuilder(
           valueListenable: receivedData,
           builder: (BuildContext context, var value, Widget child) {
-            print("Changed");
-            print(receivedData.value);
             return drawRanking();
           },
           child: drawRanking(),

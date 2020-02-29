@@ -22,7 +22,9 @@ class HomeBackground extends StatelessWidget {
               gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [animation["color1"], animation["color2"]])),
+                  colors: [animation["color1"], animation["color2"]]
+              )
+          ),
         );
       },
     );

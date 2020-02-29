@@ -2,7 +2,6 @@ import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:chemistry_game/constants/text_styling.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nice_button/NiceButton.dart';
 
@@ -47,7 +46,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   void initState() {
-    print("Friends");
     super.initState();
     _firebaseMessaging.configure(
       onMessage: (Map<String, dynamic> message) {
@@ -65,8 +63,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
     _firebaseMessaging.getToken().then((token) async {
       playerToken = token;
-      print("Token : $playerToken");
-
       showToast("Wait to load all friend");
 
       var data = {
@@ -86,7 +82,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   void showToast(var toastMsg){
     Fluttertoast.showToast(
         msg: toastMsg.toString(),
-        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
+        timeInSecForIos: 10,
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT
     );
@@ -113,13 +109,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
         showToast("There are not invitations");
         return;
       }
-      print("Invitations: " + invitations[0]);
 
       List<Widget> users = new List<Widget>();
 
       for(int i = 0; i < invitations.length; i++)
       {
-        print(invitations[i]);
         users.add(
           Container(
             width: width,
@@ -143,7 +137,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     icon: Icon(Icons.check),
                     color: Colors.green,
                     onPressed: () {
-                      print(invitations[i]);
                       var data = {
                         "friendUsername": invitations[i],
                         "userId": userId
@@ -245,7 +238,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
               radius: 52.0,
               background: theme.buttonColor,
               textColor: Colors.black,
-//              width: mediaQueryWidth * 0.3,
               text: "Invitations",
               onPressed: () async {
                 drawInvitations(mediaQueryWidth * 0.8, mediaQueryHeight * 0.7);
@@ -290,7 +282,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
       List<Widget> friends = new List<Widget>();
 
       for(int i = 0; i < Result.value.length; i++) {
-        print("Friend: " + Result.value[i]["username"]);
         friends.add(drawUserData(mediaQueryWidth * 0.2, mediaQueryHeight * 0.8, Result.value[i]["username"],
                                     Result.value[i]["singleGameWins"], Result.value[i]["teamGameWins"]));
       }
@@ -320,11 +311,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 radius: 52.0,
                 background: theme.buttonColor,
                 textColor: Colors.black,
-//                width: mediaQueryWidth * 0.2,
                 text: "Invite a friend",
                 onPressed: () async {
-                  print(username);
-
                   var data = {
                     "userId": userId,
                     "friendUsername": username

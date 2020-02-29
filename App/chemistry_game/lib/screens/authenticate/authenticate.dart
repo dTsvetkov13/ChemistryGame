@@ -5,9 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:nice_button/nice_button.dart';
-import 'login_screen.dart';
-import 'register_screen.dart';
-
 
 class Authenticate extends StatefulWidget {
 
@@ -432,8 +429,6 @@ class AuthenticateState extends State<Authenticate> {
             background: Colors.blue,
             textColor: Colors.black,
             text: "Information",
-            //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
-            //padding: EdgeInsets.only(right: mediaQueryData.size.width/3, bottom: mediaQueryData.size.height/5),
             onPressed: () {
               print("Information pressed");
               //TODO: Change the state of the AnimatedFade

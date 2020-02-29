@@ -8,12 +8,11 @@ import 'package:uuid/uuid.dart';
 
 class Reaction {
 
-  Map<Uuid, card> leftSideCards = new Map<Uuid, card>(); //Can be changed to Multimap
+  Map<Uuid, card> leftSideCards = new Map<Uuid, card>();
   Map<Uuid, card> rightSideCards = new Map<Uuid, card>();
 
   ValueNotifier<bool> updated = new ValueNotifier<bool>(false);
   ValueNotifier<bool> exists = new ValueNotifier<bool>(false);
-  //ValueNotifier<bool> showEditMenu = new ValueNotifier<bool>(false);
 
   Reaction();
 

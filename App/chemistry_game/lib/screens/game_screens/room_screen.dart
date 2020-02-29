@@ -113,7 +113,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   @override
   void initState() {
-    print("called");
     super.initState();
     firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) {
@@ -122,18 +121,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
           switch(data["title"])
           {
-            //TODO: chekc if Player Cards is used
-            case("Player Cards"):
-              var elementCards = message["data"]["elementCards"];
-              var compoundCards = message["data"]["compoundCards"];
-
-              print("Element Cards: " + elementCards);
-              print("Compound Cards: " + compoundCards);
-              break;
             case("Start"):
               toastMsg = message["notification"]["body"];
               showToast(toastMsg);
-              print(toastMsg);
               break;
             case("Game Finished"):
               print("Game Finished");
@@ -144,11 +134,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 var secondPlace = message["data"]["secondPlace"];
                 var thirdPlace = message["data"]["thirdPlace"];
                 var fourthPlace = message["data"]["fourthPlace"];
-                print(firstPlace);
-                print(secondPlace);
-                print(thirdPlace);
-                print(fourthPlace);
-
 
                 if(firstPlace == null) break;
                 else {
@@ -158,7 +143,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                     thirdPlace.toString(),
                     fourthPlace.toString()
                   ];
-                  print(places[0]);
                   Navigator.pop(context);
                   Navigator.push(context,
                     MaterialPageRoute(builder: (context) =>
@@ -169,13 +153,11 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               break;
             case("Points Updated"):
               points.value = int.parse(message["data"]["pointsToAdd"]);
-              print(message["notification"]["body"]);
               break;
             case("Placed Card"):
               toastMsg = message["notification"]["body"];
               showToast(toastMsg);
               player.removeElementCard(cardToRemove.name, cardToRemove);
-              print(cardToRemove.name);
               calledFunction = false;
               setState(() {
                 listViewStartingIndex = listViewStartingIndex;
@@ -201,8 +183,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
               playerOnTurn = message["data"]["playerId"];
               playerOnTurnName = message["data"]["playerName"];
-              print(playerOnTurn);
-
               break;
             case("Missed Turn"):
               toastMsg = message["notification"]["body"];
@@ -211,8 +191,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
               if(currPlayerId == playerId) {
                 var cardToAddString = message["data"]["cardToAdd"];
-                print(cardToAddString);
-
                 player.addElementCard(ElementCard.fromString(cardToAddString.toString()));
                 setState(() {
                   listViewStartingIndex = listViewStartingIndex;
@@ -221,7 +199,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               break;
             case("New Last Card"):
               var newLastCard = message["data"]["newLastCard"];
-              //var newLastCardSplitted = newLastCard.toString().split(",");
               var splitted = newLastCard.toString().split(",");
               setState(() {
                 lastCardData = ElementCard(name: splitted[0], group: splitted[1], period: int.parse(splitted[2]));
@@ -229,7 +206,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               break;
             case("Complete Reaction Failed"):
               toastMsg = message["notification"]["body"];
-              print(toastMsg);
               currReaction.clear();
               showToast(toastMsg);
               completeReactionCalled = false;
@@ -238,14 +214,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               toastMsg = message["notification"]["body"];
               showToast(toastMsg);
               calledFunction = false;
-              print(toastMsg);
               break;
             case("Receive Deck Card"):
               var cardData = message["data"]["cardToGiveData"];
 
-              //var cardDataSplitted = cardData.toString().split(",");
-              print("Deck card: " + cardData);
-              //player.addElementCard(ElementCard(name: cardDataSplitted[0], group: cardDataSplitted[1], period: int.parse(cardDataSplitted[2])));
               player.addElementCard(ElementCard.fromString(cardData.toString()));
               calledFunction = false;
               setState(() {
@@ -261,13 +233,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             case("Chat Msg"):
               var msgSender = message["data"]["sender"];
               var msg = message["data"]["msg"];
-//              showTopToast(chatMsgSender + ": " + chatMsg.value.toString());
-              print("Before loop");
+
               for(int i = 0; i < fieldPlayers.length; i++) {
-                print("in loop");
                 if(fieldPlayers[i].name == msgSender) {
-                  print("Sender: " + msgSender);
-                  print("Last message: " + msg);
                   fieldPlayers[i].lastMessage = msg.toString();
                   break;
                 }
@@ -275,7 +243,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               break;
             case("Empty Side"):
               toastMsg = message["notification"]["body"];
-              print(toastMsg);
               currReaction.clear();
               completeReactionCalled = false;
               showToast(toastMsg);
@@ -308,11 +275,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
               currReaction.clear();
 
-              print(player.compoundCards.length);
-              print(player.elementCards.length);
-              print("Before add card");
-
-              print(toastMsg);
               showToast(toastMsg);
 
               setState(() {
@@ -332,12 +294,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               if(message["data"].containsKey("cardToAdd")) //TODO: see why this do not work
               {
                 cardToAdd = message["data"]["cardToAdd"];
-                print("CardToAdd: " + cardToAdd);
 
                 if(cardToAdd.contains(","))
                 {
-                  //var cardData = cardToAdd.split(",");
-                  //player.addElementCard(ElementCard(name: cardData[0], group: cardData[1], period: int.parse(cardData[2])));
                   player.addElementCard(ElementCard.fromString(cardToAdd.toString()));
                 }
                 else
@@ -345,7 +304,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                   player.addCompoundCard(CompoundCard.fromString(cardToAdd));
                 }
               }
-              print("After check the cardToAdd");
               setState(() {
                 buildMenuShowingCardsType = buildMenuShowingCardsType;
               });
@@ -360,7 +318,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     );
     firebaseMessaging.getToken().then((token) {
       playerToken = token;
-      print("Token : $playerToken");
     });
   }
 
@@ -406,27 +363,11 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       );
     });
 
-    print("PLayer names : " + fieldPlayers.toString());
-    print("Once");
-    currReaction.rightSideCards.values.forEach((card) {
-      if(card != null)
-      {
-        print("Right side: " + card.name);
-      }
-    });
-    currReaction.leftSideCards.values.forEach((card) {
-      if(card != null)
-      {
-        print("Left side: " + card.name);
-      }
-    });
-
     final mediaQueryData = MediaQuery.of(context);
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
 
     List<Draggable> elementCards = List<Draggable>();
-    List<Container> combinationCards = List<Container>();
 
     player.getElementCards().forEach( (e) => elementCards.add(e.drawDraggableElementCard(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)));
 
@@ -434,14 +375,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       return ListView(
         scrollDirection: Axis.horizontal,
         children: elementCards.sublist(startingIndex,
-            startingIndex+6 > player.getElementCards().length ? player.getElementCards().length : startingIndex+6)//<Widget>[
-      );
-    }
-
-    ListView getCombinationCards() {
-      return ListView(
-        scrollDirection: Axis.horizontal,
-        children: combinationCards,
+            startingIndex+6 > player.getElementCards().length ? player.getElementCards().length : startingIndex+6)
       );
     }
 
@@ -464,7 +398,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                             elevation: 1.0,
                             radius: 52.0,
                             background: primaryGreen,
-//                            background: Colors.lightGreenAccent,
                             textColor: Colors.black,
                             text: "Yes",
                             onPressed: () {
@@ -503,6 +436,396 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       ) ?? false;
     }
 
+    Widget drawLeftSide() {
+      return Column(
+        children: <Widget>[
+          Container(
+            width: mediaQueryWidth * 0.20,
+            height: mediaQueryHeight * 0.25,
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: mediaQueryWidth * 0.10,
+                  child: PopupMenuButton(
+                    key: _menuKey,
+                    child: RawMaterialButton(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9.0)
+                      ),
+                      child: Icon(Icons.message, color: primaryGreen,),
+                      onPressed: () {
+                        dynamic state = _menuKey.currentState;
+                        state.showButtonMenu();
+                      },
+                    ),
+                    itemBuilder: (_) => textMessagesWidgets,
+                    onSelected: (value) {
+                      var data = {
+                        "msg": value,
+                        "senderName": player.name, ///TODO: change it to player.name
+                        "senderId": player.id
+                      };
+
+                      callSendChatMsgToEveryone(data);
+                    },
+                  ),
+
+                  alignment: Alignment.topCenter,
+                ),
+                Container(
+                  width: mediaQueryWidth * 0.10,
+                  child: new LayoutBuilder(builder: (context, constraint) {
+                    return new Text(
+                        _start.toString(),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: constraint.biggest.height/2));
+                  }),
+                  alignment: Alignment.center,
+                )
+              ],
+            ),
+          ),
+
+          Row(
+            children: <Widget>[
+              Container(
+                  width: mediaQueryWidth * 0.10,
+                  height: mediaQueryHeight * 0.50,
+                  color: secondaryYellow,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                          Icons.person
+                      ),
+                      Text(
+                        fieldPlayers[2].name,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold
+                        ),
+                      ),
+                      Text(
+                          "Cards: " + fieldPlayers[2].cardsNumber.toString()
+                      ),
+                      Row(
+                        children: <Widget>[
+                          Icon(Icons.message),
+                          Flexible(
+                            child: Text(
+                                ": " + fieldPlayers[2].lastMessage
+                            ),
+                          )
+                        ],
+                      )
+                    ],
+                  )
+              ),
+              Container(
+                width: mediaQueryWidth * 0.10,
+                height: mediaQueryHeight * 0.50,
+              ),
+            ],
+          ),
+
+          Container(
+            width: mediaQueryWidth * 0.20,
+            height: mediaQueryHeight * 0.25,
+            child: ValueListenableBuilder(
+              valueListenable: listViewStartingIndex,
+              builder: (BuildContext context, int value, Widget child) {
+                if (!(listViewStartingIndex.value - 6 < 0)) {
+                  return RawMaterialButton(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0)),
+                    child: Icon(Icons.arrow_back, color: primaryGreen),
+                    onPressed: () {
+                      setState(() {
+                        listViewStartingIndex.value -= 6;
+                      });
+                    },
+                  );
+                }
+                else {
+                  return Container();
+                }
+              },
+              child: RawMaterialButton(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
+                ),
+                child: Icon(Icons.arrow_back, color: Colors.blue),
+                onPressed: () {
+                  setState(() {
+                    if(!(listViewStartingIndex.value - 6 < 0)) {
+                      listViewStartingIndex.value -= 6;
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget drawMiddleSide() {
+      return Column(
+          children: <Widget> [
+            Container(
+              height: mediaQueryHeight * 0.1,
+              width: mediaQueryWidth * 0.6,
+              color: secondaryPink,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Icon(
+                      Icons.person
+                  ),
+
+                  Text(
+                    fieldPlayers[1].name + " ",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  Text(
+                      "Cards: " + fieldPlayers[1].cardsNumber.toString()
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(Icons.message),
+                      Flexible(
+                        child: Text(
+                            ": " + fieldPlayers[1].lastMessage
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+
+            Container(
+              height: mediaQueryHeight * 0.15,
+              width: mediaQueryWidth * 0.6,
+              child: Center(
+                child: Text(
+                    playerOnTurnName + " is on turn"
+                ),
+              ),
+            ),
+
+            Container(
+              width: mediaQueryWidth * 0.6,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+                children: <Widget>[
+                  //Deck
+                  Container(
+                    height: mediaQueryHeight * 0.4,
+                    width: mediaQueryWidth * 0.15,
+                    child: RaisedButton(
+                      child: Center(child: Text("Deck")),
+                      onPressed: () async {
+
+                        if(!calledFunction && playerOnTurn == playerId) {
+                          calledFunction = true;
+                          showToast("wait...");
+                          var cardData = (await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken})).data;
+
+                          if(cardData == false) {
+                            showToast("It is not your turn!");
+                            calledFunction = false;
+                            return;
+                          }
+
+                          player.addElementCard(ElementCard.fromString(cardData.toString()));
+                          calledFunction = false;
+                          setState(() {
+                            listViewStartingIndex = listViewStartingIndex;
+                          });
+                        }
+                        else
+                        {
+                          showToast("You cannot get deck card now");
+                        }
+
+                      },
+                    ),
+                  ),
+
+                  //Last Card
+                  drawLastCardDragTarget(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
+
+                  //Build Menu
+                  Container(
+                    height: mediaQueryHeight * 0.4,
+                    width: mediaQueryWidth * 0.15,
+                    child: RaisedButton(
+                      onPressed: () {
+                        showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Center(child: Text("Build Menu")),
+                                content: Container(
+                                  width: mediaQueryWidth * 0.8,
+                                  height: mediaQueryHeight * 0.8,
+                                  decoration: BoxDecoration( //TODO: Make it responsive
+                                      border: Border.all(
+                                        width: mediaQueryHeight * 0.0025,
+                                        color: Colors.black,
+                                      )
+                                  ),
+                                  child: createBuildMenuContent(mediaQueryWidth * 0.8 - mediaQueryHeight * 0.01, mediaQueryHeight * 0.64),
+                                ),
+                              );
+                            }
+                        );
+                      },
+                      child: Text("Build Menu"),
+                    ),
+                  )
+
+                ],
+              ),
+            ),
+
+            Container(
+              height: mediaQueryHeight * 0.15,
+              width: mediaQueryWidth * 0.6,
+            ),
+
+            Container(
+                height: mediaQueryHeight * 0.2,
+                width: mediaQueryWidth * 0.6,
+                child: ValueListenableBuilder(
+                  valueListenable: listViewStartingIndex,
+                  builder: (BuildContext context, int value, Widget child) {
+                    return getElementCards(listViewStartingIndex.value);
+                  },
+                  child: getElementCards(listViewStartingIndex.value),
+                )
+            )
+          ]
+      );
+    }
+
+    Widget drawRightSide() {
+      return Column(
+        children: <Widget>[
+          Container(
+              width: mediaQueryWidth * 0.20,
+              height: mediaQueryHeight * 0.25,
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: mediaQueryWidth * 0.10,
+                    child: Center(
+                      child: Text(
+                          "points: " + points.value.toString()
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: mediaQueryWidth * 0.10,
+                    child: RawMaterialButton(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                      child: Icon(Icons.clear),
+                      onPressed: () {
+                        _onWillPop();
+                      },
+                    ),
+                    alignment: Alignment.topCenter,
+                  ),
+                ],
+              )
+          ),
+
+          Row(
+            children: <Widget>[
+              Container(
+                width: mediaQueryWidth * 0.10,
+                height: mediaQueryHeight * 0.50,
+              ),
+              Container(
+                width: mediaQueryWidth * 0.10,
+                height: mediaQueryHeight * 0.50,
+                color: primaryGreen,//Colors.green,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(
+                        Icons.person
+                    ),
+                    Text(
+                      fieldPlayers[0].name,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold
+                      ),
+                    ),
+                    Text(
+                        "Cards: " + fieldPlayers[0].cardsNumber.toString()
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Icon(Icons.message),
+                        Flexible(
+                          child: Text(
+                              ": " + fieldPlayers[0].lastMessage
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          Container(
+            width: mediaQueryWidth * 0.20,
+            height: mediaQueryHeight * 0.25,
+            child: ValueListenableBuilder(
+              valueListenable: listViewStartingIndex,
+              builder: (BuildContext context, int value, Widget child) {
+                if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
+                  return RawMaterialButton(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
+                    ),
+                    child: Icon(Icons.arrow_forward, color: primaryGreen),
+                    onPressed: () {
+                      setState(() {
+                        listViewStartingIndex.value += 6;
+                      });
+                    },
+                  );
+                }
+                else {
+                  return Container();
+                }
+              },
+              child: RawMaterialButton(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
+                ),
+                child: Icon(Icons.arrow_forward, color: Colors.blue),
+                onPressed: () {
+                  setState(() {
+                    if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
+                      listViewStartingIndex.value += 6;
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
@@ -511,428 +834,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
           children: <Widget>[
-            Column(
-              children: <Widget>[
 
-                ///Left side
+            drawLeftSide(),
 
-                Container(
-                  width: mediaQueryWidth * 0.20,
-                  height: mediaQueryHeight * 0.25,
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        width: mediaQueryWidth * 0.10,
-//                      height: mediaQueryHeight * 0.25,
-                        child: PopupMenuButton(
-                          key: _menuKey,
-                          child: RawMaterialButton(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9.0)
-                            ),
-                            child: Icon(Icons.message, color: primaryGreen,),
-                            onPressed: () {
-                              dynamic state = _menuKey.currentState;
-                              state.showButtonMenu();
-                            },
-                          ),
-                          itemBuilder: (_) => textMessagesWidgets,
-                          onSelected: (value) {
-                            print(value);
+            drawMiddleSide(),
 
-                            var data = {
-                              "msg": value,
-                              "senderName": "Misho", ///TODO: change it to player.name
-                              "senderId": player.id
-                            };
-
-                            callSendChatMsgToEveryone(data);
-                          },
-                        ),
-
-                        alignment: Alignment.topCenter,
-                      ),
-                      Container(
-                        width: mediaQueryWidth * 0.10,
-//                height: mediaQueryHeight * 0.25,
-
-                        child: new LayoutBuilder(builder: (context, constraint) {
-                          return new Text(
-                              _start.toString(),
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: constraint.biggest.height/2));
-                        }),
-                        alignment: Alignment.center,
-                      )
-                    ],
-                  ),
-                ),
-
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: mediaQueryWidth * 0.10,
-                      height: mediaQueryHeight * 0.50,
-                      color: secondaryYellow,//Colors.yellowAccent,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Icon(
-                            Icons.person
-                          ),
-                          Text(
-                            fieldPlayers[2].name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold
-                            ),
-                          ),
-                          Text(
-                            "Cards: " + fieldPlayers[2].cardsNumber.toString()
-                          ),
-                          Row(
-                            children: <Widget>[
-                              Icon(Icons.message),
-                              Flexible(
-                                child: Text(
-                                    ": " + fieldPlayers[2].lastMessage
-                                ),
-                              )
-                            ],
-                          )
-                        ],
-                      )
-                    ),
-                    Container(
-                      width: mediaQueryWidth * 0.10,
-                      height: mediaQueryHeight * 0.50,
-                    ),
-                  ],
-                ),
-
-                Container(
-                  width: mediaQueryWidth * 0.20,
-                  height: mediaQueryHeight * 0.25,
-                  child: ValueListenableBuilder(
-                    valueListenable: listViewStartingIndex,
-                    builder: (BuildContext context, int value, Widget child) {
-                      if (!(listViewStartingIndex.value - 6 < 0)) {
-                        return RawMaterialButton(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0)),
-                          child: Icon(Icons.arrow_back, color: primaryGreen),
-                          onPressed: () {
-                            setState(() {
-                              //showElementCards = true;
-//                            if (!(listViewStartingIndex.value - 6 < 0)) {
-                                listViewStartingIndex.value -= 6;
-//                            }
-                            });
-                          },
-                        );
-                      }
-                      else {
-                        return Container();
-                      }
-                    },
-                    child: RawMaterialButton(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                      ),
-                      child: Icon(Icons.arrow_back, color: Colors.blue),
-                      onPressed: () {
-                        setState(() {
-                          //showElementCards = true;
-                          if(!(listViewStartingIndex.value - 6 < 0)) {
-                            listViewStartingIndex.value -= 6;
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            ///Middle side
-
-            Column(
-              children: <Widget> [
-                Container(
-                  height: mediaQueryHeight * 0.1,
-                  width: mediaQueryWidth * 0.6,
-                  color: secondaryPink,//Colors.black,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(
-                        Icons.person
-                      ),
-
-                      Text(
-                        fieldPlayers[1].name + " ",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold
-                        ),
-                      ),
-                      Text(
-                        "Cards: " + fieldPlayers[1].cardsNumber.toString()
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(Icons.message),
-                          Flexible(
-                            child: Text(
-                                ": " + fieldPlayers[1].lastMessage
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ), // draw cards
-                ),
-
-                Container(
-                  height: mediaQueryHeight * 0.15,
-                  width: mediaQueryWidth * 0.6,
-                  child: Center(
-                    child: Text(
-                      playerOnTurnName + " is on turn"
-                    ),
-                  ),
-                ),
-
-                Container(
-                  width: mediaQueryWidth * 0.6,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-
-                    children: <Widget>[
-                      //Deck
-                      Container(
-                        height: mediaQueryHeight * 0.4,
-                        width: mediaQueryWidth * 0.15,
-                        child: RaisedButton(
-                          child: Center(child: Text("Deck")),
-                          onPressed: () async {
-
-                            if(!calledFunction && playerOnTurn == playerId) {
-                              calledFunction = true;
-                              showToast("wait...");
-                              var cardData = (await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken})).data;
-
-                              if(cardData == false) {
-                                showToast("It is not your turn!");
-                                calledFunction = false;
-                                return;
-                              }
-
-                              print("Deck card: " + cardData);
-                              //player.addElementCard(ElementCard(name: cardDataSplitted[0], group: cardDataSplitted[1], period: int.parse(cardDataSplitted[2])));
-                              player.addElementCard(ElementCard.fromString(cardData.toString()));
-                              calledFunction = false;
-                              setState(() {
-                                listViewStartingIndex = listViewStartingIndex;
-                              });
-                            }
-                            else
-                            {
-                              showToast("You cannot get deck card now");
-                            }
-
-                          },
-                        ),
-                      ),
-
-                      //Last Card
-                      drawLastCardDragTarget(mediaQueryWidth * 0.15, mediaQueryHeight * 0.4),
-
-                      //Build Menu
-                      Container(
-                        height: mediaQueryHeight * 0.4,
-                        width: mediaQueryWidth * 0.15,
-                        child: RaisedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Center(child: Text("Build Menu")),
-                                  content: Container(
-                                    width: mediaQueryWidth * 0.8,
-                                    height: mediaQueryHeight * 0.8,
-                                    decoration: BoxDecoration( //TODO: Make it responsive
-                                        border: Border.all(
-                                          width: mediaQueryHeight * 0.0025,
-                                          color: Colors.black,
-                                        )
-                                    ),
-                                    child: createBuildMenuContent(mediaQueryWidth * 0.8 - mediaQueryHeight * 0.01, mediaQueryHeight * 0.64),
-                                  ),
-                                );
-                              }
-                            );
-                          },
-                          child: Text("Build Menu"),
-                        ),
-                      )
-
-                    ],
-                  ),
-                ),
-
-                Container(
-                  height: mediaQueryHeight * 0.15,
-                  width: mediaQueryWidth * 0.6,
-//                child: ValueListenableBuilder(
-//                  valueListenable: chatMsg,
-//                  child: Center(
-//                    child: Text(
-//                      ""
-//                    )
-//                  ),
-//                  builder: (BuildContext context, String value, Widget child) {
-//                    return Center(
-//                      child: Text(
-//                        chatMsgSender + ": " + chatMsg.value
-//                      ),
-//                    );
-//                  },
-//                ),
-                ),
-
-                Container(
-                  height: mediaQueryHeight * 0.2,
-                  width: mediaQueryWidth * 0.6,
-                  child: ValueListenableBuilder(
-                    valueListenable: listViewStartingIndex,
-                    builder: (BuildContext context, int value, Widget child) {
-                      return getElementCards(listViewStartingIndex.value);
-                    },
-                    child: getElementCards(listViewStartingIndex.value),
-                  )
-                )
-              ]
-            ),
-
-            ///Right side
-            Column(
-
-              children: <Widget>[
-
-                Container(
-                  width: mediaQueryWidth * 0.20,
-                  height: mediaQueryHeight * 0.25,
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        width: mediaQueryWidth * 0.10,
-                        child: Center(
-                          child: Text(
-                            "points: " + points.value.toString()
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: mediaQueryWidth * 0.10,
-                        child: RawMaterialButton(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                          child: Icon(Icons.clear),
-                          onPressed: () {
-                            _onWillPop();
-                          },
-//                        child: Icon(Icons.settings, color: Colors.blue,),
-//                        onPressed: () {
-//                          showSettingsDialog(mediaQueryWidth * 0.3, mediaQueryHeight * 0.6);
-//                        },
-                        ),
-                        alignment: Alignment.topCenter,
-                      ),
-                    ],
-                  )
-                ),
-
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: mediaQueryWidth * 0.10,
-                      height: mediaQueryHeight * 0.50,
-                    ),
-                    Container(
-                      width: mediaQueryWidth * 0.10,
-                      height: mediaQueryHeight * 0.50,
-                      color: primaryGreen,//Colors.green,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Icon(
-                            Icons.person
-                          ),
-                          Text(
-                            fieldPlayers[0].name,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold
-                            ),
-                          ),
-                          Text(
-                            "Cards: " + fieldPlayers[0].cardsNumber.toString()
-                          ),
-                          Row(
-                            children: <Widget>[
-                              Icon(Icons.message),
-                              Flexible(
-                                child: Text(
-                                    ": " + fieldPlayers[0].lastMessage
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-
-                    ),
-                  ],
-                ),
-
-                Container(
-                  width: mediaQueryWidth * 0.20,
-                  height: mediaQueryHeight * 0.25,
-                  child: ValueListenableBuilder(
-                    valueListenable: listViewStartingIndex,
-                    builder: (BuildContext context, int value, Widget child) {
-                      if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
-                        return RawMaterialButton(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                          ),
-                          child: Icon(Icons.arrow_forward, color: primaryGreen),
-                          onPressed: () {
-                            setState(() {
-                              listViewStartingIndex.value += 6;
-                            });
-                          },
-                        );
-                      }
-                      else {
-                        return Container();
-                      }
-                    },
-                    child: RawMaterialButton(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
-                      ),
-                      child: Icon(Icons.arrow_forward, color: Colors.blue),
-                      onPressed: () {
-                        setState(() {
-                          if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
-                            listViewStartingIndex.value += 6;
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            )
+            drawRightSide()
           ],
         ),
       ),
@@ -977,33 +884,28 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Container(
-//            width: width,
             height: height * 0.3,
             child: RaisedButton(
               child: Text("Elements"),
               onPressed: () {
                 setState(() {
-                  print("Element");
                   buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ElementCards;
                 });
               },
             ),
           ),
           Container(
-//            width: width,
             height: height * 0.3,
             child: RaisedButton(
               child: Text("Compounds"),
               onPressed: () {
                 setState(() {
-                  print("Reaction");
                   buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ReactionCards;
                 });
               },
             ),
           ),
           Container(
-//            width: width,
             height: height * 0.3,
             child: RaisedButton(
               child: Text("Accelerations"),
@@ -1060,7 +962,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Center(child: Text("Settings")),
-          //content: createBuildMenuContent(),
           content: Container(
             width: width,
             height: height,
@@ -1120,7 +1021,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               scrollDirection: Axis.horizontal,
               children: <Widget>[
                 drawCompleteButton(width, height),
-                //drawAddCardFieldButton(width, height),
                 reaction.draw(width * 0.8, height),
               ],
             ),
@@ -1180,16 +1080,13 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             }
           });
 
-          print("Left cards: " + leftCards.toString());
-          print("Right cards: " + rightCards.toString());
-
           var dataToSend = {
             "playerId": playerId,
             "playerToken": playerToken,
             "leftSideCards": leftCards,
             "rightSideCards": rightCards
           };
-          showToast("wait..."); //TODO: the msg can be changed
+          showToast("wait...");
           await callCompleteReaction(dataToSend);
         },
       ),
@@ -1247,15 +1144,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
         dataToSend["cardName"] = data.name;
 
-        print("Place card: " + data.uuid + " : " + data.name);
-
         var isPlaced = (await callPlaceCard.call(dataToSend)).data;
 
         if(isPlaced){
           toastMsg = "You have placed card successfully";
           showToast(toastMsg);
           player.removeElementCard(cardToRemove.name, cardToRemove);
-          print(cardToRemove.name);
           calledFunction = false;
           setState(() {
             listViewStartingIndex = listViewStartingIndex;

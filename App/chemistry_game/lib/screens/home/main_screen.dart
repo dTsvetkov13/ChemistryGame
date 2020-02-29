@@ -2,17 +2,14 @@ import 'package:chemistry_game/models/element_card.dart';
 import 'package:chemistry_game/models/fieldPlayer.dart';
 import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/profile_data.dart';
-import 'package:chemistry_game/screens/home/home.dart';
 import 'package:chemistry_game/screens/loading_screen.dart';
-import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
-import 'package:chemistry_game/constants/text_styling.dart';
 import 'package:chemistry_game/screens/game_screens/room_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:nice_button/nice_button.dart';
-import 'package:provider/provider.dart';
 
 enum gameType {
   singleGame,
@@ -51,7 +48,10 @@ class _MainScreenState extends State<MainScreen> {
   static Text createGameWindow(String text) {
     return Text(
       text,
-      style: optionStyle,
+      style: TextStyle(
+        fontSize: 30,
+        fontWeight: FontWeight.bold
+      ),
     );
   }
 
@@ -125,15 +125,11 @@ class _MainScreenState extends State<MainScreen> {
               lastCard = message["data"]["lastCard"];
               playersNames = message["data"]["playersNames"];
 
-              var receivedData = (await callGetPlayerCards({"playerId": userId})).data; //, "playerToken": userToken
+              var receivedData = (await callGetPlayerCards({"playerId": userId})).data;
 
               var elementCards = receivedData["elementCards"];
               var compoundCards = receivedData["compoundCards"];
               playerName = receivedData["playerName"];
-
-              print("Element Cards: " + elementCards);
-              print("Compound Cards: " + compoundCards);
-              print(getPlayerNames(playersNames));
 
               var playerNames = getPlayerNames(playersNames);
 
@@ -159,39 +155,6 @@ class _MainScreenState extends State<MainScreen> {
               await callReadyPlayer.call({"roomId": roomId});
               break;
             case("Join Room") :
-
-              break;
-            case("Player Cards") : //Delete this case
-              var elementCards = message["data"]["elementCards"];
-              var compoundCards = message["data"]["compoundCards"];
-              playerName = message["data"]["playerName"];
-
-              print("Element Cards: " + elementCards);
-              print("Compound Cards: " + compoundCards);
-              print(getPlayerNames(playersNames));
-
-              var playerNames = getPlayerNames(playersNames);
-
-              Player player = new Player(playerName, userId, elementCards, compoundCards);
-
-              var fieldPlayers = new List<FieldPlayer>();
-              playerNames.forEach((name) {
-                fieldPlayers.add(
-                  new FieldPlayer(name: name, cardsNumber: player.elementCards.length)
-                );
-              });
-
-              lastCard = lastCard.split(",");
-
-              ElementCard lastCardData = new ElementCard(name: lastCard[0], group: lastCard[1], period: int.parse(lastCard[2]));
-
-              Navigator.pop(context);
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => BuildRoomScreen(roomId: roomId, playerId: userId, lastCardData: lastCardData,
-                      player: player, firebaseMessaging: _firebaseMessaging, fieldPlayers: fieldPlayers,))
-              );
-              await callReadyPlayer.call({"roomId": roomId});
               break;
             case("Team Invation Accepted"):
               Navigator.push(
@@ -220,7 +183,6 @@ class _MainScreenState extends State<MainScreen> {
                           children: <Widget>[
                             NiceButton(
                               width: mediaQueryData.size.width * 0.2,
-//                              width: 100,
                               elevation: 1.0,
                               radius: 52.0,
                               background: Colors.lightGreenAccent,
@@ -247,7 +209,6 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             NiceButton(
                               width: mediaQueryData.size.width * 0.2,
-//                              width: 100,
                               elevation: 1.0,
                               radius: 52.0,
                               background: Colors.lightGreenAccent,
@@ -343,134 +304,127 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   var mediaQueryData;
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
 
     var theme = Theme.of(context);
 
-    print("First Once");
-
     mediaQueryData = MediaQuery.of(context);
     final iconButtonMargin = 10.0;
 
-    return SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  //color: Colors.cyanAccent,
-                  //height: mediaQueryData.size.height/2,
-                  margin: EdgeInsets.all(iconButtonMargin),
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_back_ios),
-                    color: Colors.black,
-                    onPressed: () {
-                      setState(() {
-                        if(currentIndex.value == 0) {
-                          currentIndex.value = types.length - 1;
-                        }
-                        else {
-                          currentIndex.value--;
-                        }
-                        currGT.value = types[currentIndex.value];
-                      });
-                    },
+    return ModalProgressHUD(
+      child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    margin: EdgeInsets.all(iconButtonMargin),
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back_ios),
+                      color: Colors.black,
+                      onPressed: () {
+                        setState(() {
+                          if(currentIndex.value == 0) {
+                            currentIndex.value = types.length - 1;
+                          }
+                          else {
+                            currentIndex.value--;
+                          }
+                          currGT.value = types[currentIndex.value];
+                        });
+                      },
+                    ),
                   ),
-                ),
-                ValueListenableBuilder<gameType> (
-                  valueListenable: currGT,
-                  builder: (context, currentIndex, Widget child) {
-                    return Container(
-                      height: mediaQueryData.size.height/2,
-                      width: mediaQueryData.size.width * 0.6,
-                      //color: Colors.blue,
-                      child: Container (
-                        decoration: BoxDecoration(
-                          border: new Border.all(
-                            color: theme.primaryColor,
-                            width: 5.0,
-                            style: BorderStyle.solid
+                  ValueListenableBuilder<gameType> (
+                    valueListenable: currGT,
+                    builder: (context, currentIndex, Widget child) {
+                      return Container(
+                        height: mediaQueryData.size.height/2,
+                        width: mediaQueryData.size.width * 0.6,
+                        child: Container (
+                          decoration: BoxDecoration(
+                            border: new Border.all(
+                              color: theme.primaryColor,
+                              width: 5.0,
+                              style: BorderStyle.solid
+                            ),
+                            borderRadius: new BorderRadius.all(new Radius.circular(10.0))
                           ),
-                          borderRadius: new BorderRadius.all(new Radius.circular(10.0))
+                          child: Container(color: theme.primaryColor, child: Center(child: gameTypeWindow[currGT.value]))
                         ),
-                        //color: Colors.blue,
-                        child: Container(color: theme.primaryColor, child: Center(child: gameTypeWindow[currGT.value]))
-                      ),
-                    );
-                  }
-                ),
-                Container(
-                  //color: Colors.cyanAccent,
-                  //height: mediaQueryData.size.height/2,
-                  margin: EdgeInsets.all(iconButtonMargin),
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_forward_ios),
-                    color: Colors.black,
-                    onPressed: () {
-                      setState(() {
-                        if(currentIndex.value == types.length - 1) {
-                          currentIndex.value = 0;
-                        }
-                        else {
-                          currentIndex.value++;
-                        }
-                        currGT.value = types[currentIndex.value];
-                      });
-                    },
+                      );
+                    }
                   ),
-                ),
-              ],
-            ),
-            Container(
-              height: mediaQueryData.size.height * 0.03,
-            ),
-            Container(
-              //width and height
-//              width: mediaQueryData.size.width * 0.4,
-//              height: mediaQueryData.size.height * 0.15,
-              child: NiceButton(
-                width: mediaQueryData.size.width * 0.4,
-                elevation: 1.0,
-                radius: 52.0,
-                background: theme.buttonColor,
-//                background: theme.buttonColor,
-                textColor: Colors.black,
-                text: "Play",
-                onPressed: () async {
-                  //TODO: whether the selectedGameType it open a InvitationMenu or navigates to a GameRoom
-                  if(!playBtnCalled) {
-                    switch (currGT.value) {
-                      case(gameType.singleGame) :
+                  Container(
+                    margin: EdgeInsets.all(iconButtonMargin),
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_forward_ios),
+                      color: Colors.black,
+                      onPressed: () {
+                        setState(() {
+                          if(currentIndex.value == types.length - 1) {
+                            currentIndex.value = 0;
+                          }
+                          else {
+                            currentIndex.value++;
+                          }
+                          currGT.value = types[currentIndex.value];
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                height: mediaQueryData.size.height * 0.03,
+              ),
+              Container(
+                child: NiceButton(
+                  width: mediaQueryData.size.width * 0.4,
+                  elevation: 1.0,
+                  radius: 52.0,
+                  background: theme.buttonColor,
+                  textColor: Colors.black,
+                  text: "Play",
+                  onPressed: () async {
+                    if(!playBtnCalled) {
+                      switch (currGT.value) {
+                        case(gameType.singleGame) :
+                          {
+                            playBtnCalled = true;
+                            var data = {
+                              "playerId": userId,
+                              "gameType": "SingleGame",
+                              "playerToken": userToken
+                            };
+
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => LoadingScreen())
+                            );
+
+                            playBtnCalled = false;
+
+                            await callFindRoom(data);
+
+                            break;
+                          }
+                        case(gameType.teamGame) :
                         {
-                          playBtnCalled = true;
-                          ///Call the findRoom function
-                          var data = {
-                            "playerId": userId,
-                            "gameType": "SingleGame",
-                            "playerToken": userToken
-                          };
-
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => LoadingScreen())
-                          );
-                          print("Loading screen");
-
-                          playBtnCalled = false;
-
-                          await callFindRoom(data);
-
-                          break;
-                        }
-                      case(gameType.teamGame) :
-                        {
-
+                          _saving = true;
                           var result = (await callGetOnlineFriends.call({"userId": userId})).data;
+                          _saving = false;
+
+                          if(result == false) {
+                            showToast("You do not have friends");
+                            return;
+                          }
 
                           List<Widget> friends = new List<Widget>();
 
@@ -496,17 +450,18 @@ class _MainScreenState extends State<MainScreen> {
                           );
                           break;
                         }
-                      default :
-                        {
-                          break;
+                        default :
+                          {
+                            break;
+                          }
                         }
                     }
-                  }
-                },
-              ),
-            )
-          ]
-        ),
+                  },
+                ),
+              )
+            ]
+          ),
+      ), inAsyncCall: _saving,
     );
   }
 

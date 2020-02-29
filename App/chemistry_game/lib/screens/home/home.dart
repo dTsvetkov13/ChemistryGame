@@ -1,22 +1,14 @@
-import 'package:chemistry_game/animations/element_comet.dart';
-import 'package:chemistry_game/backgrounds/home_background.dart';
 import 'package:chemistry_game/models/profile_data.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:chemistry_game/screens/authenticate/login_screen.dart';
-import 'package:chemistry_game/screens/authenticate/register_screen.dart';
 import 'package:chemistry_game/screens/home/friends_screen.dart';
-import 'package:chemistry_game/screens/home/profile_screen.dart';
 import 'package:chemistry_game/screens/home/ranking_screen.dart';
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/models/User.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:chemistry_game/services/database.dart';
 import 'package:chemistry_game/screens/home/main_screen.dart';
-import 'package:chemistry_game/constants/text_styling.dart';
-import 'package:simple_animations/simple_animations.dart';
 
 class HomeScreen extends StatefulWidget {
 
@@ -91,7 +83,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
     _firebaseMessaging.getToken().then((token) async {
       userToken = token;
-      print("Token : $userToken");
 
       User tempUser = await _auth.user.first;
 
@@ -102,28 +93,26 @@ class HomeScreenState extends State<HomeScreen> {
 
       callUpdateCurrToken.call(data);
 
-      print("Token : $userToken");
-
       data = {
         "userId": tempUser.uid
       };
 
-//      callGetAllFriends.call(data);
-//      callGetAllInvitations.call(data);
+      callGetAllFriends.call(data);
+      callGetAllInvitations.call(data);
 
       data = {
         "sortedBy": "singleGameWins"
       };
 
-//      callGetTopTen.call(data);
+      callGetTopTen.call(data);
 
       data = {
         "sortedBy": "teamGameWins"
       };
 
-//      callGetTopTen.call(data);
+      callGetTopTen.call(data);
 
-//      callGetOnlineFriends.call({"userId": tempUser.uid});
+      callGetOnlineFriends.call({"userId": tempUser.uid});
     });
   }
 
@@ -135,16 +124,13 @@ class HomeScreenState extends State<HomeScreen> {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
-    ]); //Landscape mode
+    ]);
 
     final mediaQueryData = MediaQuery.of(context);
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
 
     User user = Provider.of<User>(context);
-    print("Third user");
-    print(user.uid);
-//    callGetProfileData.call({"userId": user.uid, "userToken": userToken});
 
     List<Widget> _widgetOptions = <Widget>[
       MainScreen(userId: user.uid),
