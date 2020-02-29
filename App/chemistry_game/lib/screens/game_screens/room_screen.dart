@@ -7,7 +7,9 @@ import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/reaction.dart';
 import 'package:chemistry_game/screens/game_screens/summary_screen.dart';
 import 'package:chemistry_game/screens/home/home.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
@@ -230,6 +232,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               print(toastMsg);
               currReaction.clear();
               showToast(toastMsg);
+              completeReactionCalled = false;
               break;
             case("Cannot Place Card"):
               toastMsg = message["notification"]["body"];
@@ -253,7 +256,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               toastMsg = message["notification"]["body"];
               showToast(toastMsg);
 
-              finished = true;
+              player.finishedCards = true;
               break;
             case("Chat Msg"):
               var msgSender = message["data"]["sender"];
@@ -274,6 +277,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               toastMsg = message["notification"]["body"];
               print(toastMsg);
               currReaction.clear();
+              completeReactionCalled = false;
               showToast(toastMsg);
               break;
             case("Complete Reaction Successed"):
@@ -346,6 +350,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 buildMenuShowingCardsType = buildMenuShowingCardsType;
               });
 
+              completeReactionCalled = false;
+
               break;
           }
 
@@ -379,7 +385,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   List<String> textMessages = ["Hi", "Well played", "Good job", "Be careful"];
   List<PopupMenuItem> textMessagesWidgets = new List<PopupMenuItem>();
 
-  bool finished = false;
+  bool completeReactionCalled = false;
   String chatMsgSender = "";
   var chatMsg = new ValueNotifier("");
 
@@ -457,7 +463,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                             width: mediaQueryWidth * 0.2,
                             elevation: 1.0,
                             radius: 52.0,
-                            background: Colors.lightGreenAccent,
+                            background: primaryGreen,
+//                            background: Colors.lightGreenAccent,
                             textColor: Colors.black,
                             text: "Yes",
                             onPressed: () {
@@ -479,7 +486,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                             width: mediaQueryWidth * 0.2,
                             elevation: 1.0,
                             radius: 52.0,
-                            background: Colors.lightGreenAccent,
+                            background: primaryGreen,
                             textColor: Colors.black,
                             text: "No",
                             onPressed: () {
@@ -522,7 +529,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                           child: RawMaterialButton(
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9.0)
                             ),
-                            child: Icon(Icons.message, color: Colors.blue,),
+                            child: Icon(Icons.message, color: primaryGreen,),
                             onPressed: () {
                               dynamic state = _menuKey.currentState;
                               state.showButtonMenu();
@@ -564,8 +571,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                     Container(
                       width: mediaQueryWidth * 0.10,
                       height: mediaQueryHeight * 0.50,
-//                    color: Colors.yellowAccent,
+                      color: secondaryYellow,//Colors.yellowAccent,
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
                           Icon(
                             Icons.person
@@ -609,7 +618,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                         return RawMaterialButton(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.0)),
-                          child: Icon(Icons.arrow_back, color: Colors.blue),
+                          child: Icon(Icons.arrow_back, color: primaryGreen),
                           onPressed: () {
                             setState(() {
                               //showElementCards = true;
@@ -649,40 +658,36 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 Container(
                   height: mediaQueryHeight * 0.1,
                   width: mediaQueryWidth * 0.6,
-//                color: Colors.black,
-                  child: Center(
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.person
-                        ),
+                  color: secondaryPink,//Colors.black,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        Icons.person
+                      ),
 
-                        Column(
-                          children: <Widget>[
-                            Text(
-                              fieldPlayers[1].name + " ",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-                            Text(
-                              "Cards: " + fieldPlayers[1].cardsNumber.toString()
-                            ),
-
-                          ],
+                      Text(
+                        fieldPlayers[1].name + " ",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold
                         ),
-                        Flexible(
-                          child: Row(
-                            children: <Widget>[
-                              Icon(Icons.message),
-                              Text(
-                                  ": " + fieldPlayers[1].lastMessage
-                              ),
-                            ],
+                      ),
+                      Text(
+                        "Cards: " + fieldPlayers[1].cardsNumber.toString()
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(Icons.message),
+                          Flexible(
+                            child: Text(
+                                ": " + fieldPlayers[1].lastMessage
+                            ),
                           ),
-                        )
-                      ],
-                    ),
+                        ],
+                      )
+                    ],
                   ), // draw cards
                 ),
 
@@ -714,6 +719,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                               calledFunction = true;
                               showToast("wait...");
                               var cardData = (await callGetDeckCard({"playerId": playerId, "roomId": roomId, "playerToken": playerToken})).data;
+
+                              if(cardData == false) {
+                                showToast("It is not your turn!");
+                                calledFunction = false;
+                                return;
+                              }
 
                               print("Deck card: " + cardData);
                               //player.addElementCard(ElementCard(name: cardDataSplitted[0], group: cardDataSplitted[1], period: int.parse(cardDataSplitted[2])));
@@ -850,8 +861,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                     Container(
                       width: mediaQueryWidth * 0.10,
                       height: mediaQueryHeight * 0.50,
-//                    color: Colors.green,
+                      color: primaryGreen,//Colors.green,
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
                           Icon(
                             Icons.person
@@ -892,7 +905,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                         return RawMaterialButton(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                           ),
-                          child: Icon(Icons.arrow_forward, color: Colors.blue),
+                          child: Icon(Icons.arrow_forward, color: primaryGreen),
                           onPressed: () {
                             setState(() {
                               listViewStartingIndex.value += 6;
@@ -964,10 +977,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Container(
-            width: width,
+//            width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Flexible(child: Text("Elements")),
+              child: Text("Elements"),
               onPressed: () {
                 setState(() {
                   print("Element");
@@ -977,12 +990,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             ),
           ),
           Container(
-            width: width,
+//            width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Flexible(
-                child: Text("Compounds"),
-              ),
+              child: Text("Compounds"),
               onPressed: () {
                 setState(() {
                   print("Reaction");
@@ -992,10 +1003,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             ),
           ),
           Container(
-            width: width,
+//            width: width,
             height: height * 0.3,
             child: RaisedButton(
-              child: Flexible(child: Text("Accelerations")),
+              child: Text("Accelerations"),
               onPressed: () {
                 showToast("We work on Accelerations");
                 //TODO: set to AccelerationCards
@@ -1139,9 +1150,17 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         color: Colors.green,
         onPressed: () async {
 
-          if(finished) {
+          if(player.finishedCards) {
             showToast("You have already finished");
             return;
+          }
+
+          if(completeReactionCalled) {
+            showToast("Wait until the check is complete!");
+            return;
+          }
+          else {
+            completeReactionCalled = true;
           }
 
           List<Map<String, String>> leftCards = new List<Map<String, String>>();
