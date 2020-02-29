@@ -1,4 +1,6 @@
 import 'package:chemistry_game/models/card.dart';
+import 'package:chemistry_game/models/element_card.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
@@ -6,100 +8,59 @@ import 'package:uuid/uuid.dart';
 
 class Reaction {
 
-  //final ReactionType reactionType;
-  int leftSide; //Can be removed if they are not used
-  int rightSide;
-
   Map<Uuid, card> leftSideCards = new Map<Uuid, card>(); //Can be changed to Multimap
   Map<Uuid, card> rightSideCards = new Map<Uuid, card>();
 
   ValueNotifier<bool> updated = new ValueNotifier<bool>(false);
+  ValueNotifier<bool> exists = new ValueNotifier<bool>(false);
   //ValueNotifier<bool> showEditMenu = new ValueNotifier<bool>(false);
 
-  /*Reaction(this.reactionType) {
-    switch (reactionType) {
-      case (ReactionType.Combination):
-        leftSide = 2;
-        rightSide = 1;
-        leftSideCards = new List(2);
-        rightSideCards = new List(1);
-        break;
-      case (ReactionType.Decomposition) :
-        leftSide = 1;
-        rightSide = 2;
-        leftSideCards = new List(1);
-        rightSideCards = new List(2);
-        break;
-      /*case (ReactionType.DisplacementReaction) : //TODO: check the values in the different types
-        leftSide = 1;
-        rightSide = 2;
-        break;
-      case (ReactionType.DoubleDisplacementReaction) :
-        leftSide = 1;
-        rightSide = 2;
-        break;
-      case (ReactionType.CombustionReaction) :
-        leftSide = 1;
-        rightSide = 2;
-        break;*/
-      default: print("There is no such case");
-    }
-  }*/
-
   Reaction();
-
-  /*void addProduct(card card) {
-    //TODO: Validation
-    rightSideCards[card.uuid] = card;
-    //rightSideCards[index] = elementCard;
-  }
-
-  void addReactant(card card) {
-    //TODO: Validation
-    //leftSideCards[index] = elementCard;
-    leftSideCards[card.uuid] = card;
-  }*/
 
   Widget draw(double width, double height) {
     return Container(
       width: width,
       height: height,
-      child: Row(
-        children: <Widget>[
-          ValueListenableBuilder(
-            valueListenable: updated,
-            builder: (BuildContext context, bool value, child) {
-              return Expanded(
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: <Widget>[
-                    //drawCompleteButton(width, height),
-                    //drawEditButton(width, height),
-                    drawLeftSide(width, height),
-                    drawLeftSideAddCardButton(width * 0.1, height * 0.7),
-                    drawArrow(width * 0.1, height * 0.7),
-                    drawRightSide(width, height),
-                    drawRightSideAddCardButton(width * 0.1, height * 0.7),
-                  ],
+      child: ValueListenableBuilder(
+        valueListenable: updated,
+        builder: (BuildContext context, bool value, child) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                drawLeftSide(width, height),
+                Container(
+                  width: width / 64,
                 ),
-              );
-            },
-            child: Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: <Widget>[
-                  //drawCompleteButton(width, height),
-                  //drawEditButton(width, height),
-                  drawLeftSide(width, height),
-                  drawLeftSideAddCardButton(width * 0.1, height * 0.7),
-                  drawArrow(width * 0.1, height * 0.7),
-                  drawRightSide(width, height),
-                  drawRightSideAddCardButton(width * 0.1, height * 0.7),
-                ],
-              ),
+                drawLeftSideAddCardButton(width * 5 / 32, height * 5 / 16),
+                drawArrow(width * 0.1, height * 0.7),
+                drawRightSide(width, height),
+                Container(
+                  width: width / 64,
+                ),
+                drawRightSideAddCardButton(width * 5 / 32, height * 5 / 16),
+              ],
             ),
+          );
+        },
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: <Widget>[
+              drawLeftSide(width, height),
+              Container(
+                width: width / 64,
+              ),
+              drawLeftSideAddCardButton(width * 5 / 32, height * 5 / 16),
+              drawArrow(width * 0.1, height * 0.7),
+              drawRightSide(width, height),
+              Container(
+                width: width / 64,
+              ),
+              drawRightSideAddCardButton(width * 5 / 32, height * 5 / 16),
+            ],
           ),
-        ],
+        )
       ),
     );
   }
@@ -107,13 +68,6 @@ class Reaction {
   Container drawLeftSide(double width, double height) {
 
     List<Widget> leftSideWidgets = new List<Widget>();
-
-    /*for(int i = 0; i < leftSideCards.length; i++) {
-      leftSideWidgets.add(drawCardPlace(width * 0.1, height * 0.7, leftSideCards.values[i]));
-      if(i+1 != leftSideCards.length) {
-        leftSideWidgets.add(drawPlus(width * 0.05, height * 0.7));
-      } //Add "plus"
-    }*/
 
     leftSideCards.forEach((key, value) {
       leftSideWidgets.add(drawCardPlace(width * 0.1, height * 0.7, key, value));
@@ -124,7 +78,6 @@ class Reaction {
 
     return Container(
       child: Row(
-        //mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: leftSideWidgets,
       ),
     );
@@ -134,9 +87,13 @@ class Reaction {
     return Container(
       width: width,
       height: height,
-      child: IconButton(
-        icon: Icon(Icons.add),
+      color: Colors.lightGreenAccent,
+      child: RaisedButton(
+        child: Text("add"),
+        color: primaryGreen,
         onPressed: () {
+          print("Width: " + width.toString() + ", height: " + height.toString());
+          exists.value = true;
           var newId = new Uuid();
           leftSideCards[newId] = null;
           updated.value = !updated.value;
@@ -149,15 +106,6 @@ class Reaction {
 
     List<Widget> rightSideWidgets = new List<Widget>();
 
-    /*for(int i = 0; i < rightSideCards.length; i++) {
-      rightSideWidgets.add(drawCardPlace(width * 0.1, height * 0.7, rightSideCards[i])); //Add rectangle with either the value of the reactant or empty
-      //print(rightSideCards[i].name);
-      if(i+1 != rightSideCards.length) {
-        rightSideWidgets.add(drawPlus(width * 0.05, height * 0.7));
-        print(drawPlus(width, height));
-      } //Add "plus"
-    }*/
-
     rightSideCards.forEach((key, value) {
       rightSideWidgets.add(drawCardPlace(width * 0.1, height * 0.7, key,  value));
       rightSideWidgets.add(drawPlus(width * 0.05, height * 0.7));
@@ -167,7 +115,6 @@ class Reaction {
 
     return Container(
       child: Row(
-        //mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: rightSideWidgets,
       ),
     );
@@ -177,13 +124,21 @@ class Reaction {
     return Container(
       width: width,
       height: height,
-      child: IconButton(
-        icon: Icon(Icons.add),
-        onPressed: () {
-          var newId = new Uuid();
-          rightSideCards[newId] = null;
-          updated.value = !updated.value;
-        },
+//      child: IconButton(
+      child: RaisedButton(
+
+        child: Text(
+          "add"
+        ),
+      color: primaryGreen,
+//      tooltip: "Add product space",
+      onPressed: () {
+//        print("Height: " + height.toString() + ", width: " + width.toString());
+        exists.value = true;
+        var newId = new Uuid();
+        rightSideCards[newId] = null;
+        updated.value = !updated.value;
+      },
       ),
     );
   }
@@ -216,15 +171,23 @@ class Reaction {
               onPressed: () {
                 if(leftSideCards.containsKey(uuid)) {
                   leftSideCards.remove(uuid);
+
                 } else if(rightSideCards.containsKey(uuid)) {
                   rightSideCards.remove(uuid);
                 } else{
                   print("Error, invalid data in drawCard");
                 }
 
+                if(leftSideCards.length == 0 && rightSideCards.length == 0) {
+                  exists.value = false;
+                }
+
+                if(card is ElementCard) {
+                  card.usedInReaction = false;
+                }
                 updated.value = !updated.value;
               },
-              child: Text("delete")
+              child: Center(child: Text("X"))
             ),
           ),
           card != null ? Container(
@@ -256,6 +219,10 @@ class Reaction {
           } else if(rightSideCards.containsKey(uuid)) {
             rightSideCards[uuid] = data;
           }
+          if(data is ElementCard) {
+            data.usedInReaction = true;
+          }
+
           updated.value = !updated.value;
         },
 
@@ -283,8 +250,22 @@ class Reaction {
   }
 
   void clear() {
+
+    leftSideCards.values.forEach((card) {
+      if(card is ElementCard) {
+        card.usedInReaction = false;
+      }
+    });
+
+    rightSideCards.values.forEach((card) {
+      if(card is ElementCard) {
+        card.usedInReaction = false;
+      }
+    });
+
     leftSideCards.clear();
     rightSideCards.clear();
+    exists.value = false;
 
     updated.value = !updated.value;
   }
