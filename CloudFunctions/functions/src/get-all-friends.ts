@@ -15,15 +15,11 @@ export const getAllFriends1 = functions.https.onCall(async (data, context) => {
 
 	for(let i = 0; i < friends.length; i++)
 	{
-		// const email = (await admin.auth().getUser(friends[i])).email;
-		// const username = email?.split("@")[0];
 		const tempUsers = (await admin.firestore().collection("users").doc(friends[i]).get());
 
 		result.push({username: tempUsers.get("username"),
 						singleGameWins: tempUsers.get("singleGameWins").toString(),
 						teamGameWins: tempUsers.get("teamGameWins").toString()});
-
-		// if(username !== undefined) result.push(username);
 	}
 
 	return result;

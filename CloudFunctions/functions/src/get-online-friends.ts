@@ -8,6 +8,11 @@ export const getOnlineFriends1 = functions.https.onCall(async (data, context) =>
 
 	const friends = (await admin.firestore().collection("friends").doc(userId).get()).get("friends");
 
+	if(friends === undefined)
+	{
+		return false;
+	}
+
 	for(let i = 0; i < friends.length; i++)
 	{
 		const user = (await admin.auth().getUser(friends[i]));

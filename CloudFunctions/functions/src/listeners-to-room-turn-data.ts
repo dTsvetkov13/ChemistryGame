@@ -162,14 +162,17 @@ async function finishGame(roomId: string)
 
 	const leftPlayers = roomData.get("leftPlayers");
 
-	for(let i = 0; i < leftPlayers.length; i++)
+	if(leftPlayers !== undefined)
 	{
-		const playerId = players[i];
-		const playerRef = admin.firestore().collection("players").doc(playerId);
-		const playerDataTemp = await playerRef.get();
-		const playerName = (playerDataTemp).get("name");
-		const playerPoints = (playerDataTemp).get("points");
-		sortedPlayerData.push({name: playerName, points: playerPoints, id: playerId});
+		for(let i = 0; i < leftPlayers.length; i++)
+		{
+			const playerId = players[i];
+			const playerRef = admin.firestore().collection("players").doc(playerId);
+			const playerDataTemp = await playerRef.get();
+			const playerName = (playerDataTemp).get("name");
+			const playerPoints = (playerDataTemp).get("points");
+			sortedPlayerData.push({name: playerName, points: playerPoints, id: playerId});
+		}
 	}
 
 	console.log("Ranking");
