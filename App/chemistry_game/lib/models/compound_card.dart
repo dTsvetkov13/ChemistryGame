@@ -1,3 +1,4 @@
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
@@ -17,7 +18,8 @@ class CompoundCard extends card{
       height: height * 0.97,
       child: Center(child: Text(name)),
       decoration: BoxDecoration(
-          border: Border.all(width: width * 0.03)
+        border: Border.all(width: width * 0.03),
+        color: usedInReaction ? secondaryYellow : Colors.white,
       ),
     );
   }

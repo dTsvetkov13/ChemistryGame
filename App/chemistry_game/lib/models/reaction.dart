@@ -91,7 +91,6 @@ class Reaction {
         child: Text("add"),
         color: primaryGreen,
         onPressed: () {
-          print("Width: " + width.toString() + ", height: " + height.toString());
           exists.value = true;
           var newId = new Uuid();
           leftSideCards[newId] = null;
@@ -123,16 +122,13 @@ class Reaction {
     return Container(
       width: width,
       height: height,
-//      child: IconButton(
       child: RaisedButton(
 
         child: Text(
           "add"
         ),
       color: primaryGreen,
-//      tooltip: "Add product space",
       onPressed: () {
-//        print("Height: " + height.toString() + ", width: " + width.toString());
         exists.value = true;
         var newId = new Uuid();
         rightSideCards[newId] = null;
@@ -210,7 +206,7 @@ class Reaction {
           );
         },
 
-        onWillAccept: (data) => data != null,
+        onWillAccept: (data) => (data != null) && !data.usedInReaction,
 
         onAccept: (data) {
           if(leftSideCards.containsKey(uuid)) {
@@ -218,9 +214,8 @@ class Reaction {
           } else if(rightSideCards.containsKey(uuid)) {
             rightSideCards[uuid] = data;
           }
-          if(data is ElementCard) {
-            data.usedInReaction = true;
-          }
+
+          data.usedInReaction = true;
 
           updated.value = !updated.value;
         },
@@ -251,15 +246,11 @@ class Reaction {
   void clear() {
 
     leftSideCards.values.forEach((card) {
-      if(card is ElementCard) {
         card.usedInReaction = false;
-      }
     });
 
     rightSideCards.values.forEach((card) {
-      if(card is ElementCard) {
         card.usedInReaction = false;
-      }
     });
 
     leftSideCards.clear();

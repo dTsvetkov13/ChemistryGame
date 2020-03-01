@@ -1,3 +1,4 @@
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
@@ -5,7 +6,6 @@ class ElementCard extends card{
   String name;
   String group;
   int period;
-  bool usedInReaction = false;
 
   ElementCard({this.name, this.group, this.period}) {
     //TODO: check name for H, 0, I, etc... and change them to H2, etc
@@ -29,7 +29,7 @@ class ElementCard extends card{
             color: Colors.black,
             width: width * 0.01
           ),
-          color: usedInReaction ? Colors.yellow : Colors.white,
+          color: usedInReaction ? secondaryYellow : Colors.white,
       ),
       child: Column(
         children: <Widget>[
