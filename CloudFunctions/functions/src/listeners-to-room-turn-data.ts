@@ -177,10 +177,12 @@ async function finishGame(roomId: string)
 	}
 
 	await admin.messaging().sendToTopic(roomId, gameFinishedMsg);
+	
+	const subscribedTokens = await roomData.get("subscribedTokens");
 
-	for(let i = 0; i < roomData.get("subscribedTokens").length; i++)
+	for(let i = 0; i < subscribedTokens.length; i++)
 	{
-		await admin.messaging().unsubscribeFromTopic(await (roomData).get("subscribedTokens")[i], roomId);
+		await admin.messaging().unsubscribeFromTopic(subscribedTokens[i], roomId);
 	}
 
 	switch(await (await admin.firestore().collection("rooms").doc(roomId).get()).get("gameType"))
