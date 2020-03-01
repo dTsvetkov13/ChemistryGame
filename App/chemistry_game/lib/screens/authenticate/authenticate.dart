@@ -1,5 +1,6 @@
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/services/database.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -104,9 +105,9 @@ class AuthenticateState extends State<Authenticate> {
         width: width,
         child: NiceButton (
           width: width,
-          elevation: 8.0,
+          elevation: 1,
           radius: 52.0,
-          background: Colors.blue,
+          background: primaryGreen,
           textColor: Colors.black,
           text: "Login",
           onPressed: () {
@@ -258,9 +259,9 @@ class AuthenticateState extends State<Authenticate> {
         width: width,
         child: NiceButton(
             width: width,
-            elevation: 8.0,
+            elevation: 1,
             radius: 52.0,
-            background: Colors.blue,
+            background: primaryGreen,
             textColor: Colors.black,
             text: "Register",
             //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
@@ -378,37 +379,40 @@ class AuthenticateState extends State<Authenticate> {
                   );
                 }
             ),
-            NiceButton(
-              width: width,
-              elevation: 8.0,
-              background: Colors.blue,
-              textColor: Colors.black,
+            RaisedButton(
+//              width: width,
+//              elevation: 8.0,
+//              background: Colors.blue,
+//              textColor: Colors.black,
 //              radius: 52.0,
-              text: "Register",
-                onPressed: () async {
-                  if(_registerFormKey.currentState.validate()){
-                    try {
-                      _saving = true;
-                      dynamic result = await _auth.registerWithEmailAndPassword(username + "@domain.com", password);
-                      print(result.uid);
-                      await DatabaseService(result.uid).configureUser(username, email);
-//                      await callGetProfileData({"userId": result.uid.toString()});
-                      _saving = false;
-                      Navigator.pop(context);
-                    }
-                    catch(error) {
-                      _saving = false;
-                      print(error);
-                      switch (error.code) {
-                        case "ERROR_EMAIL_ALREADY_IN_USE":
-                          this.error.value = "This username is already used";
-                          break;
-                        default:
-                          this.error.value = "An undefined error happened.";
-                      }
+              child: Text(
+                "Register",
+                textScaleFactor: 1.5,
+              ),
+              onPressed: () async {
+                if(_registerFormKey.currentState.validate()){
+                  try {
+                    _saving = true;
+                    dynamic result = await _auth.registerWithEmailAndPassword(username + "@domain.com", password);
+                    print(result.uid);
+                    await DatabaseService(result.uid).configureUser(username, email);
+//                    await callGetProfileData({"userId": result.uid.toString()});
+                    _saving = false;
+                    Navigator.pop(context);
+                  }
+                  catch(error) {
+                    _saving = false;
+                    print(error);
+                    switch (error.code) {
+                      case "ERROR_EMAIL_ALREADY_IN_USE":
+                        this.error.value = "This username is already used";
+                        break;
+                      default:
+                        this.error.value = "An undefined error happened.";
                     }
                   }
                 }
+              }
             )
           ]
         ),
@@ -424,9 +428,9 @@ class AuthenticateState extends State<Authenticate> {
         width: width,
         child: NiceButton (
             width: width,
-            elevation: 8.0,
+            elevation: 1,
             radius: 52.0,
-            background: Colors.blue,
+            background: primaryGreen,
             textColor: Colors.black,
             text: "Information",
             onPressed: () {
