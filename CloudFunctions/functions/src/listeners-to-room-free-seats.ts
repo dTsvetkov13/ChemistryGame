@@ -34,9 +34,8 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 				}
 			}
 
-			console.log("Id: " + change.after.id.toString());
-
-			await admin.messaging().sendToTopic(change.after.id.toString(), startMsg).then((response) => {
+			await admin.messaging().sendToTopic(change.after.id.toString(), startMsg)
+			.then((response) => {
 				console.log("Resp: " + response);
 			})
 			.catch((error) => {
@@ -48,7 +47,7 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 			await roomTurnDataRef.set({"finishedPlayers": 2});
 			await roomTurnDataRef.update({"nextTurn": -1});
 			await roomTurnDataRef.update({"finishedTurnPlayer": 5});
-			await roomTurnDataRef.update({"readyPlayers": 0}); //Change to 0;
+			await roomTurnDataRef.update({"readyPlayers": 0});
 			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": false});
 			await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(-1)}); //TODO: change to -2
 
@@ -78,7 +77,6 @@ async function configurePlayers (data : any) {
 		await playersRef.doc(playerId.toString()).update({"roomId": roomId});
 		await playersRef.doc(playerId.toString()).update({"points": 0});
 		playerNames[i] = playerData.get("username");
-		console.log("Player id : " + playerId);
 	}
 
 	/*var playersDataMsg = {
@@ -96,7 +94,6 @@ async function configurePlayers (data : any) {
 async function dealing (data: any) {
 	const roomId = data.roomId.toString();
 	const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
-	// const playersRef = admin.firestore().collection("players");
 	const playerIds = [];
 	const elementCardsToDeal = 2;
 	const compoundCardsToDeal = 2; //TODO: change to n
@@ -117,10 +114,7 @@ async function dealing (data: any) {
 
 	for(let i = 0; i < playersCount * elementCardsToDeal; i++)
 	{
-		// await playersRef.doc(playerIds[playerIndex]).update({"elementCards": admin.firestore.FieldValue.arrayUnion(elementCards[i])});
 		await addNewElementCard(elementCards[i], playerIds[playerIndex]);
-
-		console.log("Cards added");
 
 		if(playerIndex === 3) playerIndex = 0;
 		else playerIndex++;
@@ -130,10 +124,9 @@ async function dealing (data: any) {
 
 	for(let i = 0; i < playersCount * compoundCardsToDeal; i++)
 	{
-		// await playersRef.doc(playerIds[playerIndex]).update({"compoundCards": admin.firestore.FieldValue.arrayUnion(compoundCards[i])});
 		await addNewCompoundCard(compoundCards[i], playerIds[playerIndex]);
 
-		if(playerIndex === 3) playerIndex = 0;
+		if(playerIndex === playersCount - 1) playerIndex = 0;
 		else playerIndex++;
 	}
 
@@ -144,13 +137,6 @@ async function dealing (data: any) {
 	await elementCards.splice(0, playersCount * elementCardsToDeal + 1);
 	
 	await roomCardsDataRef.update({"deck": elementCards});
-	// await roomDataRef.update({"deckCardsCount": elementCards.length});
-
-	// for(let i = 0; i < playersCount; i++)
-	// {
-	// 	await playersRef.doc(playerIds[i]).update({"elementCardsCount": elementCardsToDeal});
-	// 	await playersRef.doc(playerIds[i]).update({"compoundCardsCount": compoundCardsToDeal});
-	// }
 
 	return "Successfully dealing";
 }

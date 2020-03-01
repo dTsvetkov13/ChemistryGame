@@ -5,7 +5,6 @@ import { addNewElementCard, generateNewDeck, getCardData } from './utils';
 export const getDeckCard1 = functions.https.onCall(async(data, context) => {
 	const playerId = data.playerId;
 	const roomId = data.roomId;
-	// const playerToken = data.playerToken;
 	
 	const roomsTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
 	

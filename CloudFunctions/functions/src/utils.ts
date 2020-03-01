@@ -1,4 +1,3 @@
-// import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 const uuidv4 = require('uuid/v4');
 
@@ -54,7 +53,6 @@ export async function generateNewDeck()
 	await admin.firestore().collection("elementCards").get()
 		.then(function(querySnapshot)  {
 			querySnapshot.forEach(function (doc) {
-				console.log(doc.data().symbol);
 				deck.push(doc.data().symbol);
 			});
 		})

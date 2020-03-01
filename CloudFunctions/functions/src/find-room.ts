@@ -7,32 +7,21 @@ export const findRoom1 = functions.https.onCall(async (data, context) => {
 
 	const roomsRef = admin.firestore().collection("rooms");
 
-	console.log("first");
-
 	const appropriateRooms = roomsRef.where("freeSeats", ">", 0);
-
-	console.log("well - ");
 
 	let foundRoom = false;
 
 	await appropriateRooms.get().then(function (querySnapshot) {
-		console.log("size : " + querySnapshot.size);
 		querySnapshot.forEach(async function(doc) {
 			if(foundRoom) return; 
 
-			console.log(doc.id + " + " + doc.data); //HERE FAIL
 			if(doc.data().gameType === gameType && !foundRoom)
 			{
-				console.log("In the room check");
-
 				foundRoom = true;
 
 				switch(gameType) {
 					case "SingleGame":
-						console.log("Update Room");
-						await updateRoom(data, doc.id); //Check if the join was successful
-							
-						//join this room
+						await updateRoom(data, doc.id); //TODO: Check if the join was successful
 						return;
 					case "TeamGame":
 						await updateRoom(data, doc.id);
@@ -64,8 +53,6 @@ async function createRoom(data: any) {
 
 	await roomRef.set({"gameType": gameType});
 
-	console.log("Got Data");
-
 	const joinMsg = {
 		"notification": {
 			"title": "Join Room",
@@ -80,15 +67,12 @@ async function createRoom(data: any) {
 
 			await roomRef.update({"freeSeats": 3});
 
-			//await roomDataRef.update({"players": {[playerId]: {"points": 0}}});
 			await roomDataRef.set({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 
-			console.log("Token: " + playerToken);
 			await admin.messaging().subscribeToTopic(playerToken, roomId.toString())
 				.then(async function(response) {
 					console.log('Successfully subscribed to topic:', response);
 					await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(playerToken)});
-					//console.log('Successfully subscribed to topic:', response.errors[0].error);
 				})
 				.catch(function(error) {
 					console.log('Error subscribing to topic:', error);
@@ -111,15 +95,10 @@ async function createRoom(data: any) {
 			const firstPlayerToken = data.firstPlayerToken;
 
 			const secondPlayerToken = (await admin.firestore().collection("tokens").doc(secondPlayerId).get()).get("token");
-
-			//await roomDataRef.set({"teams": {"firstTeam": {[firstPlayerId]: {"points": 0}, [secondPlayerId] : {"points": 0}}}});
 			
 			await roomDataRef.set({"players": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
 			
 			await roomDataRef.update({"firstTeamPlayerTemp": secondPlayerId});
-
-			// await roomDataRef.set({"firstTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
-			// await roomDataRef.update({"firstTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 2});
 
@@ -167,12 +146,9 @@ async function createRoom(data: any) {
 
 async function updateRoom(data: any, roomId : string) {
 	const gameType = data.gameType.toString();
-	//const roomId = data.roomId.toString();
 
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
 	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);
- 
-	console.log("Before the gameType: " + roomId);
 
 	const joinMsg = {
 		"notification": {
@@ -188,12 +164,9 @@ async function updateRoom(data: any, roomId : string) {
 			
 			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayUnion(playerId)});
 
-			console.log("Before sending message");
-
 			await admin.messaging().subscribeToTopic(playerToken, roomId.toString()).then(async function(response) {
 				console.log('Successfully subscribed to topic:', response);
 				await roomDataRef.update({"subscribedTokens": admin.firestore.FieldValue.arrayUnion(playerToken)});
-				//console.log('Successfully subscribed to topic:', response.errors[0].error);
 			})
 			.catch(function(error) {
 				console.log('Error subscribing to topic:', error);
@@ -222,8 +195,6 @@ async function updateRoom(data: any, roomId : string) {
 			await roomDataRef.update({
 				"firstTeamPlayerTemp": admin.firestore.FieldValue.delete()
 			});
-			// await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(firstPlayerId)});
-			// await roomDataRef.update({"secondTeam": admin.firestore.FieldValue.arrayUnion(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": 0});
 

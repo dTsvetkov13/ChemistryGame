@@ -70,8 +70,8 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 		includepodid: 'ReactionList:ChemicalReactionData',
 		podstate: 'ReactionList:ChemicalReactionData__Show formulas',
 		format: 'plaintext',
-	// }).then(console.log);
 	}).then(async (queryresult: any) => {
+		//If numpods is equel to 0, there is such a reaction
 		if(queryresult.numpods !== 0)
 		{
 			var receivedString = queryresult.pods[0].subpods[0].plaintext;
@@ -184,14 +184,11 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 					};
 
 					await admin.messaging().sendToDevice(playerToken, correctMsgWithData);
-					//const roomId = (await admin.firestore().collection("players").doc(playerId).get()).get("roomId");
-					//await finishGame(roomId);
 					//TODO: maybe add bonus points
 					return;
 				}
 				else
 				{
-					//Fill more cards
 					var fillMoreCardsMsg = {
 						"notification": {
 							"title": "Complete Reaction Failed",
@@ -206,10 +203,6 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 		}
 		else
 		{
-			console.log("Bonus points");
-
-			// console.log(queryresult.pods[1]);
-
 			var correctMsgWithoutData = {
 				"notification": {
 					"title": "Complete Reaction Successed",
@@ -222,8 +215,6 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 			//Deleting cards
 
 			await deleteCardsFromPlayer(playerId, leftSideCards, rightSideCards);
-
-			console.log("After deleting");
 
 			await admin.firestore().collection("players").doc(playerId).update({"points": admin.firestore.FieldValue.increment(20)});
 			
@@ -250,13 +241,9 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 
 				await sendFinishedPlayerMsg(playerToken);
 			}
-
-			//remove the cards from the player
-			//add bonus points
 			
 		}
 	}).catch(console.error)
-	//If numpods is equel to 0, there is such a reaction
 })
 
 async function playerHasTheseCards(playerId: string, leftSideCards: any, rightSideCards: any)

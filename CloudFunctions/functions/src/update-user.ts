@@ -10,9 +10,7 @@ export const updateUser1 = functions.https.onCall(async (data, context) => {
 
 	if(id === null) {
 		console.log("Id is null!");
-		return "Invalid id";
-	} 
-	
+	}
 
 	if(username !== null) {
 		await admin.firestore().collection("users").doc(id.toString()).set({"username" : username});

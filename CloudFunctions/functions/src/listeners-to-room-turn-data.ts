@@ -54,16 +54,12 @@ export const listenersToRoomTurnData1 = functions.firestore
 			console.log("Game Finished");
 			return;
 		}
-
-		// console.log(change.after.id);
 		
 		if(nextTurn === -1)
 		{
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": admin.firestore.FieldValue.increment(1)});
 			return;
 		}
-
-		// console.log((await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("deck")[0]);
 
 		const dataBefore = change.before.data();
 
@@ -75,7 +71,6 @@ export const listenersToRoomTurnData1 = functions.firestore
 		{
 			const playerId = (roomData).get("players")[nextTurn];
 			const playerName = (await admin.firestore().collection("players").doc(playerId).get()).get("name");
-			console.log("player : " + playerId);
 
 			const nextTurnMsg = {
 				"notification" : {
@@ -95,7 +90,6 @@ export const listenersToRoomTurnData1 = functions.firestore
 			const nextPlayer = nextTurn === (roomData.get("players").length - 1) ? 0 : nextTurn + 1;
 
 			await admin.firestore().collection("roomsTurnData").doc(change.after.id).update({"nextTurn": nextPlayer})
-			console.log("Next Turn : " + nextPlayer.toString());
 		}
 	}
 );
@@ -111,8 +105,6 @@ async function finishGame(roomId: string)
 	{
 		await admin.firestore().collection("players").doc(finishedPlayers[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
 	}
-
-	console.log("After adding points");
 
 	var playerData: {points: number; name: string; id: string}[] = new Array<{points: number; name: string; id: string}>();
 
@@ -138,11 +130,7 @@ async function finishGame(roomId: string)
 		playerData.push({name: playerName, points: playerPoints, id: playerId});
 	}
 
-	console.log("After getting data: " + playerData);
-
 	var sortedPlayerData: {points: number; name: string; id: string}[] = playerData.sort((p1, p2) => {
-		console.log("Compare: " + p1.name + ": " + p1.points + " === " + p2.name + ": " + p2.points);
-		
 		if(p1.points > p2.points) return -1;
 		else if(p1.points < p2.points) return 1;
 		else
@@ -173,13 +161,6 @@ async function finishGame(roomId: string)
 			const playerPoints = (playerDataTemp).get("points");
 			sortedPlayerData.push({name: playerName, points: playerPoints, id: playerId});
 		}
-	}
-
-	console.log("Ranking");
-
-	for(let i = 0; i < 4; i++)
-	{
-		console.log(sortedPlayerData[i].name);
 	}
 
 	var gameFinishedMsg = {
@@ -242,7 +223,6 @@ async function playerTurn(playerId : string, roomId : string) {
 	for(let i = 0; i < seconds; i++)
 	{
 		await delay(1000);
-		console.log("Sec : " + [i+1]);
 
 		if((await admin.firestore().collection("roomsTurnData").doc(roomId).get()).get("finishedTurnPlayer") === playerOnTurn)
 		{
@@ -262,15 +242,11 @@ async function playerTurn(playerId : string, roomId : string) {
 		
 		cardFromDeck = deck[0];
 		await roomCardsDataRef.update({"deck": deck});
-		console.log("Deck size: " + roomCardsData.get("deck").length);
 	}
 	else
 	{
 		cardFromDeck = await (roomCardsData).get("deck")[0];
 	}
-
-	console.log("Deck size: " + roomCardsData.get("deck").length);
-	
 	
 	await roomCardsDataRef.update({"deck": admin.firestore.FieldValue.arrayRemove(cardFromDeck)});
 	const cardData = await addNewElementCard(cardFromDeck, playerId);
