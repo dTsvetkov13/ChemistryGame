@@ -20,8 +20,6 @@ class Player{
     for(int i = 0; i < cards.length - 1; i++) {
       var data = cards[i].split(",");
       this.elementCards.add(data[1], ElementCard.fromString(cards[i]));//ElementCard(name: data[0], group: data[1], period: int.parse(data[2])));
-
-      print(data[0] + data.toString());
     }
     var compoundCardsNames = compoundCards.toString().split("\n");
 
@@ -29,8 +27,6 @@ class Player{
     {
       this.compoundCards.add(CompoundCard.fromString(compoundCardsNames[i]));
     }
-
-    print(compoundCardsNames);
   }
 
   List<ElementCard> getElementCards() {
