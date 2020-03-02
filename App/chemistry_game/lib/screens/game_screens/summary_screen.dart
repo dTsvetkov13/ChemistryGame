@@ -1,4 +1,5 @@
 import 'package:chemistry_game/screens/home/home.dart';
+import 'package:chemistry_game/screens/home/main_screen.dart';
 import 'package:flutter/material.dart';
 
 class PlayerData{
@@ -8,12 +9,16 @@ class PlayerData{
   PlayerData(this.name, this.points);
 }
 
+// ignore: must_be_immutable
 class SummaryScreen extends StatelessWidget {
 
+  GameType gameType;
   final List<PlayerData> playersData = new List<PlayerData>();
 
-  SummaryScreen(List<String> players)
+  SummaryScreen(List<String> players, GameType gameType)
   {
+    this.gameType = gameType;
+
     for(int i = 0; i < players.length; i++)
     {
       var playerSplitted = players[i].split(",");
@@ -24,14 +29,27 @@ class SummaryScreen extends StatelessWidget {
   List<DataRow> getDataRows() {
     List<DataRow> dataRows = new List<DataRow>();
 
-    for(int i = 0; i < playersData.length; i++) {
-      dataRows.add(
-        new DataRow(cells: [
-          DataCell(Text(((i+1).toString()))),
-          DataCell(Text(playersData[i].name)),
-          DataCell(Text(playersData[i].points.toString()))
-        ])
-      );
+    if(gameType == GameType.singleGame) {
+      for(int i = 0; i < playersData.length; i++) {
+        dataRows.add(
+            new DataRow(cells: [
+              DataCell(Text(((i+1).toString()))),
+              DataCell(Text(playersData[i].name)),
+              DataCell(Text(playersData[i].points.toString()))
+            ])
+        );
+      }
+    }
+    else {
+      for(int i = 0; i < playersData.length; i++) {
+        dataRows.add(
+            new DataRow(cells: [
+              DataCell(Text(((i < 2 ?  1 : 2).toString()))),
+              DataCell(Text(playersData[i].name)),
+              DataCell(Text(playersData[i].points.toString()))
+            ])
+        );
+      }
     }
 
     return dataRows;

@@ -7,6 +7,7 @@ import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/reaction.dart';
 import 'package:chemistry_game/screens/game_screens/summary_screen.dart';
 import 'package:chemistry_game/screens/home/home.dart';
+import 'package:chemistry_game/screens/home/main_screen.dart';
 import 'package:chemistry_game/theme/colors.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -125,8 +126,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               toastMsg = message["notification"]["body"];
               showToast(toastMsg);
               break;
-            case("Game Finished"):
-              print("Game Finished");
+            case("Single Game Finished"):
+              print("Single Game Finished");
               showToast("Game finished");
 
               if(message.containsKey("data")) {
@@ -146,8 +147,34 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                   Navigator.pop(context);
                   Navigator.push(context,
                     MaterialPageRoute(builder: (context) =>
-                      SummaryScreen(places)
+                      SummaryScreen(places, GameType.singleGame)
                     ));
+                }
+              }
+              break;
+            case("Team Game Finished"):
+              print("Team Game Finished");
+              showToast("Game finished");
+
+              if(message.containsKey("data")) {
+                var firstPlace = message["data"]["player1"];
+                var secondPlace = message["data"]["player2"];
+                var thirdPlace = message["data"]["player3"];
+                var fourthPlace = message["data"]["player4"];
+
+                if(firstPlace == null) break;
+                else {
+                  List<String> places = [
+                    firstPlace.toString(),
+                    secondPlace.toString(),
+                    thirdPlace.toString(),
+                    fourthPlace.toString()
+                  ];
+                  Navigator.pop(context);
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) =>
+                          SummaryScreen(places, GameType.teamGame)
+                      ));
                 }
               }
               break;

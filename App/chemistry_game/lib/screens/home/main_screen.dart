@@ -11,7 +11,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:nice_button/nice_button.dart';
 
-enum gameType {
+enum GameType {
   singleGame,
   teamGame
 }
@@ -33,16 +33,16 @@ class _MainScreenState extends State<MainScreen> {
 
   _MainScreenState({this.userId});
 
-  static Map<gameType, Widget> gameTypeWindow = {
-    gameType.singleGame: createGameWindow("Single Mode"),
-    gameType.teamGame: createGameWindow("Team Mode"),
+  static Map<GameType, Widget> gameTypeWindow = {
+    GameType.singleGame: createGameWindow("Single Mode"),
+    GameType.teamGame: createGameWindow("Team Mode"),
   };
 
   static ValueNotifier<int> currentIndex = ValueNotifier<int>(0);
-  static ValueNotifier<gameType> currGT = ValueNotifier<gameType>(gameType.singleGame);
+  static ValueNotifier<GameType> currGT = ValueNotifier<GameType>(GameType.singleGame);
 
-  static List<gameType> types = [
-    gameType.singleGame, gameType.teamGame
+  static List<GameType> types = [
+    GameType.singleGame, GameType.teamGame
   ];
 
   static Text createGameWindow(String text) {
@@ -340,7 +340,7 @@ class _MainScreenState extends State<MainScreen> {
                       },
                     ),
                   ),
-                  ValueListenableBuilder<gameType> (
+                  ValueListenableBuilder<GameType> (
                     valueListenable: currGT,
                     builder: (context, currentIndex, Widget child) {
                       return Container(
@@ -394,7 +394,7 @@ class _MainScreenState extends State<MainScreen> {
                   onPressed: () async {
                     if(!playBtnCalled) {
                       switch (currGT.value) {
-                        case(gameType.singleGame) :
+                        case(GameType.singleGame) :
                           {
                             playBtnCalled = true;
                             var data = {
@@ -415,7 +415,7 @@ class _MainScreenState extends State<MainScreen> {
 
                             break;
                           }
-                        case(gameType.teamGame) :
+                        case(GameType.teamGame) :
                         {
                           _saving = true;
                           var result = (await callGetOnlineFriends.call({"userId": userId})).data;
