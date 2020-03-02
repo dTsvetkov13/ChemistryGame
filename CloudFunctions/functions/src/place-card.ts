@@ -53,11 +53,27 @@ export const placeCard1 = functions.https.onCall(async (data, context) => {
 
 				if((await playerRef.get()).get("elementCards").length === 0)
 				{
-					await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
-					await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
-					await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+					if(roomData.get("gameType") === "TeamGame")
+					{
+						if(playerOnTurnIndex % 2 === 0)
+						{
+							await roomDataRef.update({"firstTeamWon": true});
+						}
+						else
+						{
+							await roomDataRef.update({"firstTeamWon": false});
+						}
 
-					await sendFinishedPlayerMsg(playerToken);
+						await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+					}
+					else
+					{
+						await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+						await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+						await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+
+						await sendFinishedPlayerMsg(playerToken);
+					}
 				}
 
 				const newLastCard = await getCardData(cardName);

@@ -235,13 +235,34 @@ export const completeReaction1 = functions.https.onCall(async (data, context) =>
 			if((playerData).get("elementCards").length <= 0)
 			{
 				const roomId = await (playerData).get("roomId");
-				await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
-				await admin.firestore().collection("roomsData").doc(roomId).update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
-				await admin.firestore().collection("roomsData").doc(roomId).update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+				
+				const roomDataRef = admin.firestore().collection("roomsData").doc(roomId);
+				const roomData = await roomDataRef.get();
+				const roomTurnDataRef = await admin.firestore().collection("roomsTurnData").doc(roomId);
+				const playerOnTurnIndex = await (await roomTurnDataRef.get()).get("nextTurn");
 
-				await sendFinishedPlayerMsg(playerToken);
+				if(roomData.get("gameType") === "TeamGame")
+				{
+					if(playerOnTurnIndex % 2 === 0)
+					{
+						await roomDataRef.update({"firstTeamWon": true});
+					}
+					else
+					{
+						await roomDataRef.update({"firstTeamWon": false});
+					}
+
+					await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+				}
+				else
+				{
+					await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
+					await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
+					await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
+
+					await sendFinishedPlayerMsg(playerToken);
+				}
 			}
-			
 		}
 	}).catch(console.error)
 })

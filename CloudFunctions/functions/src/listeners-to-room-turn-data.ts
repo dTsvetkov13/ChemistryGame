@@ -27,7 +27,7 @@ export const listenersToRoomTurnData1 = functions.firestore
 			return;
 		}
 
-		switch (await (await admin.firestore().collection("rooms").doc(change.after.id).get()).get("gameType")) {
+		switch (await (await admin.firestore().collection("roomsData").doc(change.after.id).get()).get("gameType")) {
 			case "SingleGame":
 				requiredFinishedPlayers = 2;
 				break;
@@ -101,21 +101,27 @@ async function finishGame(roomId: string)
 	const roomData = await roomDataRef.get();
 	const finishedPlayers = roomData.get("finishedPlayerIds");
 
-	for(let i = 0; i < finishedPlayers.length; i++)
+	if(finishedPlayers !== undefined)
 	{
-		await admin.firestore().collection("players").doc(finishedPlayers[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
+		for(let i = 0; i < finishedPlayers.length; i++)
+		{
+			await admin.firestore().collection("players").doc(finishedPlayers[i]).update({"points": admin.firestore.FieldValue.increment(100 - (i * 50))});
+		}
 	}
 
 	var playerData: {points: number; name: string; id: string}[] = new Array<{points: number; name: string; id: string}>();
 
-	for(let i = 0; i < finishedPlayers.length; i++)
+	if(finishedPlayers !== undefined)
 	{
-		const playerId = finishedPlayers[i];
-		const playerRef = admin.firestore().collection("players").doc(playerId);
-		const playerDataTemp = await playerRef.get();
-		const playerName = (playerDataTemp).get("name");
-		const playerPoints = (playerDataTemp).get("points");
-		playerData.push({name: playerName, points: playerPoints, id: playerId});
+		for(let i = 0; i < finishedPlayers.length; i++)
+		{
+			const playerId = finishedPlayers[i];
+			const playerRef = admin.firestore().collection("players").doc(playerId);
+			const playerDataTemp = await playerRef.get();
+			const playerName = (playerDataTemp).get("name");
+			const playerPoints = (playerDataTemp).get("points");
+			playerData.push({name: playerName, points: playerPoints, id: playerId});
+		}
 	}
 
 	const players = roomData.get("players");
@@ -130,54 +136,134 @@ async function finishGame(roomId: string)
 		playerData.push({name: playerName, points: playerPoints, id: playerId});
 	}
 
-	var sortedPlayerData: {points: number; name: string; id: string}[] = playerData.sort((p1, p2) => {
-		if(p1.points > p2.points) return -1;
-		else if(p1.points < p2.points) return 1;
-		else
-		{
-			if(p1.id === finishedPlayers[0])
-			{
-				return -1;
-			}
-			else if(p2.id === finishedPlayers[0])
-			{
-				return 1;
-			}
-			else return 0;
-		}
-
-	});
-
-	const leftPlayers = roomData.get("leftPlayers");
-
-	if(leftPlayers !== undefined)
+	switch(await (await admin.firestore().collection("roomsData").doc(roomId).get()).get("gameType"))
 	{
-		for(let i = 0; i < leftPlayers.length; i++)
-		{
-			const playerId = players[i];
-			const playerRef = admin.firestore().collection("players").doc(playerId);
-			const playerDataTemp = await playerRef.get();
-			const playerName = (playerDataTemp).get("name");
-			const playerPoints = (playerDataTemp).get("points");
-			sortedPlayerData.push({name: playerName, points: playerPoints, id: playerId});
-		}
+		case("SingleGame"):
+
+			playerData = playerData.sort((p1, p2) => {
+				if(p1.points > p2.points) return -1;
+				else if(p1.points < p2.points) return 1;
+				else
+				{
+					if(p1.id === finishedPlayers[0])
+					{
+						return -1;
+					}
+					else if(p2.id === finishedPlayers[0])
+					{
+						return 1;
+					}
+					else return 0;
+				}
+			
+			});
+		
+			const leftPlayers = roomData.get("leftPlayers");
+		
+			if(leftPlayers !== undefined)
+			{
+				for(let i = 0; i < leftPlayers.length; i++)
+				{
+					const playerId = players[i];
+					const playerRef = admin.firestore().collection("players").doc(playerId);
+					const playerDataTemp = await playerRef.get();
+					const playerName = (playerDataTemp).get("name");
+					const playerPoints = (playerDataTemp).get("points");
+					playerData.push({name: playerName, points: playerPoints, id: playerId});
+				}
+			}
+		
+			let gameFinishedMsg = {
+				"notification": {
+					"title": "Single Game Finished",
+					"body": "The game has finished"
+				},
+				"data": {
+					"firstPlace": playerData[0].name + "," + playerData[0].points.toString(),
+					"secondPlace": playerData[1].name + "," + playerData[1].points.toString(),
+					"thirdPlace": playerData[2].name + "," + playerData[2].points.toString(),
+					"fourthPlace": playerData[3].name + "," + playerData[3].points.toString(),
+				}
+			}
+		
+			await admin.messaging().sendToTopic(roomId, gameFinishedMsg);
+
+			await admin.firestore().collection("users").doc(playerData[0].id)
+				.update({"singleGameWins": admin.firestore.FieldValue.increment(1)});
+			break;
+		case("TeamGame"):
+
+			let firstTeamPoints = 0;
+			let secondTeamPoints = 0;
+
+			for(let i = 0; i < playerData.length; i++)
+			{
+				if(i % 2 === 0)
+				{
+					firstTeamPoints += playerData[i].points;
+				}
+				else
+				{
+					secondTeamPoints += playerData[i].points;
+				}
+			}
+
+			if(roomData.get("firstTeamWon"))
+			{
+				firstTeamPoints += 50;
+			}
+			else
+			{
+				secondTeamPoints += 50;
+			}
+
+			if(firstTeamPoints > secondTeamPoints)
+			{
+				let gameFinishedMsg2 = {
+					"notification": {
+						"title": "Team Game Finished",
+						"body": "The game has finished"
+					},
+					"data": {
+						"player1": playerData[0].name + "," + firstTeamPoints.toString(),
+						"player2": playerData[2].name + "," + firstTeamPoints.toString(),
+						"player3": playerData[1].name + "," + secondTeamPoints.toString(),
+						"player4": playerData[3].name + "," + secondTeamPoints.toString(),
+					}
+				}
+
+				await admin.messaging().sendToTopic(roomId, gameFinishedMsg2);
+
+				await admin.firestore().collection("users").doc(playerData[0].id)
+					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+				await admin.firestore().collection("users").doc(playerData[2].id)
+					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+			}
+			else
+			{
+				let gameFinishedMsg1 = {
+					"notification": {
+						"title": "Team Game Finished",
+						"body": "The game has finished"
+					},
+					"data": {
+						"player1": playerData[1].name + "," + secondTeamPoints.toString(),
+						"player2": playerData[3].name + "," + secondTeamPoints.toString(),
+						"player3": playerData[0].name + "," + firstTeamPoints.toString(),
+						"player4": playerData[2].name + "," + firstTeamPoints.toString(),
+					}
+				}
+
+				await admin.messaging().sendToTopic(roomId, gameFinishedMsg1);
+			}
+
+			await admin.firestore().collection("users").doc(playerData[1].id)
+					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+				await admin.firestore().collection("users").doc(playerData[3].id)
+					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+			break
 	}
 
-	var gameFinishedMsg = {
-		"notification": {
-			"title": "Game Finished",
-			"body": "The game has finished"
-		},
-		"data": {
-			"firstPlace": sortedPlayerData[0].name + "," + sortedPlayerData[0].points.toString(),
-			"secondPlace": sortedPlayerData[1].name + "," + sortedPlayerData[1].points.toString(),
-			"thirdPlace": sortedPlayerData[2].name + "," + sortedPlayerData[2].points.toString(),
-			"fourthPlace": sortedPlayerData[3].name + "," + sortedPlayerData[3].points.toString(),
-		}
-	}
-
-	await admin.messaging().sendToTopic(roomId, gameFinishedMsg);
-	
 	const subscribedTokens = await roomData.get("subscribedTokens");
 
 	for(let i = 0; i < subscribedTokens.length; i++)
@@ -185,22 +271,9 @@ async function finishGame(roomId: string)
 		await admin.messaging().unsubscribeFromTopic(subscribedTokens[i], roomId);
 	}
 
-	switch(await (await admin.firestore().collection("rooms").doc(roomId).get()).get("gameType"))
+	for(let i = 0; i < await playerData.length; i++)
 	{
-		case("SingleGame"):
-			await admin.firestore().collection("users").doc(sortedPlayerData[0].id)
-				.update({"singleGameWins": admin.firestore.FieldValue.increment(1)});
-			break;
-		case("TeamGame"):
-			//TODO: create the team game
-			// await admin.firestore().collection("users").doc(sortedPlayerData[0].id)
-				// .update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
-			break
-	}
-
-	for(let i = 0; i < await sortedPlayerData.length; i++)
-	{
-		admin.firestore().collection("players").doc(sortedPlayerData[i].id).delete()
+		admin.firestore().collection("players").doc(playerData[i].id).delete()
 		.then(function() {
 			console.log("Document successfully deleted!");
 		}).catch(function(error) {

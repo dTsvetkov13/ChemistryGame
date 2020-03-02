@@ -18,7 +18,10 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 			const lastCard = await (await admin.firestore().collection("roomCardsData").doc(change.after.id).get()).get("lastCard");
 			let lastCardData = "";
 
-			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": true});
+			const roomDataRef = admin.firestore().collection("roomsData").doc(change.after.id);
+
+			await roomDataRef.update({"gameFinished": true});
+			await roomDataRef.update({"gameType": change.after.data()?.gameType});
 
 			lastCardData = await getCardData(lastCard);
 
@@ -48,7 +51,7 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 			await roomTurnDataRef.update({"nextTurn": -1});
 			await roomTurnDataRef.update({"finishedTurnPlayer": 5});
 			await roomTurnDataRef.update({"readyPlayers": 0});
-			await admin.firestore().collection("roomsData").doc(change.after.id).update({"gameFinished": false});
+			await roomDataRef.update({"gameFinished": false});
 			await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(-1)}); //TODO: change to -2
 
 			console.log("Start the Game");
