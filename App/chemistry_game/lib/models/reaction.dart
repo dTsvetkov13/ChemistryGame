@@ -246,11 +246,15 @@ class Reaction {
   void clear() {
 
     leftSideCards.values.forEach((card) {
+      if(card != null) {
         card.usedInReaction = false;
+      }
     });
 
     rightSideCards.values.forEach((card) {
+      if(card != null) {
         card.usedInReaction = false;
+      }
     });
 
     leftSideCards.clear();
