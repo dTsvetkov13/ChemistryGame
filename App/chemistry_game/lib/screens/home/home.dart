@@ -24,12 +24,6 @@ class HomeScreenState extends State<HomeScreen> {
 
   int _selectedIndex = 0;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   var userToken;
   FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
@@ -62,6 +56,7 @@ class HomeScreenState extends State<HomeScreen> {
   );
 
   @override
+  // ignore: missing_return
   Future<void> initState() {
     super.initState();
     print("HOME INIT");
