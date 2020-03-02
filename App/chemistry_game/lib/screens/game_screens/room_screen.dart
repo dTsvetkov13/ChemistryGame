@@ -320,6 +320,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
               if(message["data"].containsKey("cardToAdd")) //TODO: see why this do not work
               {
+                print("Card to add");
                 cardToAdd = message["data"]["cardToAdd"];
 
                 if(cardToAdd.contains(","))
@@ -578,7 +579,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               child: RawMaterialButton(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                 ),
-                child: Icon(Icons.arrow_back, color: Colors.blue),
+                child: Icon(Icons.arrow_back, color: primaryGreen),
                 onPressed: () {
                   setState(() {
                     if(!(listViewStartingIndex.value - 6 < 0)) {
@@ -838,7 +839,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               child: RawMaterialButton(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)
                 ),
-                child: Icon(Icons.arrow_forward, color: Colors.blue),
+                child: Icon(Icons.arrow_forward, color: primaryGreen),
                 onPressed: () {
                   setState(() {
                     if(!(listViewStartingIndex.value + 6 >= player.getElementCards().length)) {
