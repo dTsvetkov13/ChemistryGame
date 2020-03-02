@@ -68,6 +68,7 @@ export const placeCard1 = functions.https.onCall(async (data, context) => {
 					}
 					else
 					{
+						console.log("Finished Player");
 						await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(1)});
 						await roomDataRef.update({"finishedPlayerIds": admin.firestore.FieldValue.arrayUnion(playerId)});
 						await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});

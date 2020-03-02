@@ -102,7 +102,7 @@ async function dealing (data: any) {
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["H", "O2", "Cu", "Cl", "Al", "Ar", "H", "Na", "H", "H", "H", "H", "Al", "Be"]; //TODO: get them from somewhere
+	let elementCards = ["H", "O", "Cl", "Cl", "Al", "Al", "Na", "Na", "H", "H", "H", "H", "Al", "Be"]; //TODO: get them from somewhere
 	
 	// const elementCards = await generateNewDeck();
 	
