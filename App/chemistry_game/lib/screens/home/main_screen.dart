@@ -114,130 +114,130 @@ class _MainScreenState extends State<MainScreen> {
     print("built");
     super.initState();
     _firebaseMessaging.configure(
-        onMessage: (Map<String, dynamic> message) async {
-          var data = message["notification"];
-          print("Message received in main screen: $data");
+      onMessage: (Map<String, dynamic> message) async {
+        var data = message["notification"];
+        print("Message received in main screen: $data");
 
-          switch(data["title"])
-          {
-            case("Game Started") :
-              roomId = message["data"]["roomId"];
-              lastCard = message["data"]["lastCard"];
-              playersNames = message["data"]["playersNames"];
+        switch(data["title"])
+        {
+          case("Game Started") :
+            roomId = message["data"]["roomId"];
+            lastCard = message["data"]["lastCard"];
+            playersNames = message["data"]["playersNames"];
 
-              var receivedData = (await callGetPlayerCards({"playerId": userId})).data;
+            var receivedData = (await callGetPlayerCards({"playerId": userId})).data;
+            print("Received data");
+            var elementCards = receivedData["elementCards"];
+            var compoundCards = receivedData["compoundCards"];
+            playerName = receivedData["playerName"];
 
-              var elementCards = receivedData["elementCards"];
-              var compoundCards = receivedData["compoundCards"];
-              playerName = receivedData["playerName"];
+            var playerNames = getPlayerNames(playersNames);
 
-              var playerNames = getPlayerNames(playersNames);
+            Player player = new Player(playerName, userId, elementCards, compoundCards);
 
-              Player player = new Player(playerName, userId, elementCards, compoundCards);
-
-              var fieldPlayers = new List<FieldPlayer>();
-              playerNames.forEach((name) {
-                fieldPlayers.add(
-                    new FieldPlayer(name: name, cardsNumber: player.elementCards.length)
-                );
-              });
-
-              lastCard = lastCard.split(",");
-
-              ElementCard lastCardData = new ElementCard(name: lastCard[0], group: lastCard[1], period: int.parse(lastCard[2]));
-
-              Navigator.pop(context);
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => BuildRoomScreen(roomId: roomId, playerId: userId, lastCardData: lastCardData,
-                    player: player, firebaseMessaging: _firebaseMessaging, fieldPlayers: fieldPlayers,))
+            var fieldPlayers = new List<FieldPlayer>();
+            playerNames.forEach((name) {
+              fieldPlayers.add(
+                  new FieldPlayer(name: name, cardsNumber: player.elementCards.length)
               );
-              await callReadyPlayer.call({"roomId": roomId});
-              break;
-            case("Join Room") :
-              break;
-            case("Team Invation Accepted"):
-              Navigator.push(
+            });
+            print("Second data");
+            lastCard = lastCard.split(",");
+
+            ElementCard lastCardData = new ElementCard(name: lastCard[0], group: lastCard[1], period: int.parse(lastCard[2]));
+            print("Third data");
+            Navigator.pop(context);
+            Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => LoadingScreen())
-              );
-              break;
-            case("Team Invitation"):
-              var senderName = message["data"]["senderName"];
-              var senderId = message["data"]["senderId"];
+                MaterialPageRoute(builder: (context) => BuildRoomScreen(roomId: roomId, playerId: userId, lastCardData: lastCardData,
+                  player: player, firebaseMessaging: _firebaseMessaging, fieldPlayers: fieldPlayers,))
+            );
+            await callReadyPlayer.call({"roomId": roomId});
+            break;
+          case("Join Room") :
+            break;
+          case("Team Invation Accepted"):
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => LoadingScreen())
+            );
+            break;
+          case("Team Invitation"):
+            var senderName = message["data"]["senderName"];
+            var senderId = message["data"]["senderId"];
 
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text(
-                        senderName.toString() + " wants to play a Multiplayer Game with you. Join him?"
-                    ),
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text(
+                      senderName.toString() + " wants to play a Multiplayer Game with you. Join him?"
+                  ),
 
-                    content: Container(
-                      width: mediaQueryData.size.height * 0.5,
-                      height: mediaQueryData.size.width * 0.2,
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            NiceButton(
-                              width: mediaQueryData.size.width * 0.2,
-                              elevation: 1.0,
-                              radius: 52.0,
-                              background: Colors.lightGreenAccent,
-                              textColor: Colors.black,
-                              text: "Yes",
-                              onPressed: () {
-                                Navigator.pop(context);
-                                var data = {
-                                  "receiverId": senderId,
-                                  "senderName": ProfileData.name
-                                };
+                  content: Container(
+                    width: mediaQueryData.size.height * 0.5,
+                    height: mediaQueryData.size.width * 0.2,
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          NiceButton(
+                            width: mediaQueryData.size.width * 0.2,
+                            elevation: 1.0,
+                            radius: 52.0,
+                            background: Colors.lightGreenAccent,
+                            textColor: Colors.black,
+                            text: "Yes",
+                            onPressed: () {
+                              Navigator.pop(context);
+                              var data = {
+                                "receiverId": senderId,
+                                "senderName": ProfileData.name
+                              };
 
-                                callAcceptTeamInvitation.call(data);
+                              callAcceptTeamInvitation.call(data);
 
-                                data = {
-                                  "gameType": "TeamGame",
-                                  "firstPlayerId": "11",
-                                  "firstPlayerToken": userToken,
-                                  "secondPlayerId": senderId
-                                };
+                              data = {
+                                "gameType": "TeamGame",
+                                "firstPlayerId": userId,
+                                "firstPlayerToken": userToken,
+                                "secondPlayerId": senderId
+                              };
 
-                                callFindRoom.call(data);
-                              },
-                            ),
-                            NiceButton(
-                              width: mediaQueryData.size.width * 0.2,
-                              elevation: 1.0,
-                              radius: 52.0,
-                              background: Colors.lightGreenAccent,
-                              textColor: Colors.black,
-                              text: "No",
-                              onPressed: () {
-                                Navigator.pop(context);
-                                //TODO: send msg that this user declined
-                              },
-                            )
-                          ],
-                        ),
+                              callFindRoom.call(data);
+                            },
+                          ),
+                          NiceButton(
+                            width: mediaQueryData.size.width * 0.2,
+                            elevation: 1.0,
+                            radius: 52.0,
+                            background: Colors.lightGreenAccent,
+                            textColor: Colors.black,
+                            text: "No",
+                            onPressed: () {
+                              Navigator.pop(context);
+                              //TODO: send msg that this user declined
+                            },
+                          )
+                        ],
                       ),
-                    )
-                  );
-                }
-              );
+                    ),
+                  )
+                );
+              }
+            );
 
-              break;
-            case ("Profile Data"):
-              ProfileData.name = message["data"]["userName"];
-              ProfileData.singleGameWins = message["data"]["singleGameWins"];
-              ProfileData.teamGameWins = message["data"]["teamGameWins"];
-              ProfileData.updated.value = !ProfileData.updated.value;
-              break;
-          }
-
-          return;
+            break;
+          case ("Profile Data"):
+            ProfileData.name = message["data"]["userName"];
+            ProfileData.singleGameWins = message["data"]["singleGameWins"];
+            ProfileData.teamGameWins = message["data"]["teamGameWins"];
+            ProfileData.updated.value = !ProfileData.updated.value;
+            break;
         }
+
+        return;
+      }
     );
     _firebaseMessaging.getToken().then((token) async {
       userToken = token;
@@ -429,7 +429,7 @@ class _MainScreenState extends State<MainScreen> {
                           List<Widget> friends = new List<Widget>();
 
                           for(int i = 0; i < result.length; i++) {
-                            friends.add(drawFriendToInvite(result[i]["name"], userId, mediaQueryData.size.width * 0.5, mediaQueryData.size.height * 0.2));
+                            friends.add(drawFriendToInvite(result[i]["name"], result[i]["id"], mediaQueryData.size.width * 0.5, mediaQueryData.size.height * 0.2));
                           }
 
                           showDialog(

@@ -1,3 +1,4 @@
+import 'package:chemistry_game/models/profile_data.dart';
 import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -110,63 +111,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
         return;
       }
 
-      List<Widget> users = new List<Widget>();
+      ValueNotifier<bool> updated = ValueNotifier(false);
+      List<String> playerNames = new List<String>();
 
-      for(int i = 0; i < invitations.length; i++)
-      {
-        users.add(
-          Container(
-            width: width,
-            height: height * 0.2,
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: width * 0.6,
-                  height: height * 0.2,
-                  child: Center(
-                    child: Text(
-                        invitations[i].toString()
-                    ),
-                  ),
-                  color: Colors.blueGrey,
-                ),
-                Container(
-                  width: width * 0.2,
-                  height: height * 0.2,
-                  child: IconButton(
-                    icon: Icon(Icons.check),
-                    color: Colors.green,
-                    onPressed: () {
-                      var data = {
-                        "friendUsername": invitations[i],
-                        "userId": userId
-                      };
-
-                      callAcceptInvitation.call(data);
-
-                    },
-                  ),
-                ),
-                Container(
-                  width: width * 0.2,
-                  height: height * 0.2,
-                  child: IconButton(
-                    icon: Icon(Icons.delete),
-                    color: Colors.red,
-                    onPressed: () {
-                      var data = {
-                        "friendUsername": invitations[i],
-                        "userId": userId
-                      };
-
-                      callDeclineInvitation.call(data);
-                    },
-                  ),
-                )
-              ],
-            ),
-            color: Colors.yellowAccent,
-          ));
+      for(int i = 0; i < invitations.length; i++) {
+        playerNames.add(invitations[i].toString());
       }
 
       showDialog(
@@ -177,15 +126,136 @@ class _FriendsScreenState extends State<FriendsScreen> {
             content: Container(
               width: width,
               height: height * 0.9,
-              child: ListView(
+              child: ValueListenableBuilder(
+                valueListenable: updated,
+                builder: (BuildContext context, bool value, Widget child) {
+                  return ListView.builder(
+                    scrollDirection: Axis.vertical,
+                    itemCount: playerNames.length,
+                    itemBuilder: (BuildContext context, int i) {
+                      return new Container(
+                        width: width,
+                        height: height * 0.2,
+                        child: Row(
+                          children: <Widget>[
+                            Container(
+                              width: width * 0.6,
+                              height: height * 0.2,
+                              child: Center(
+                                child: Text(
+                                  playerNames[i].toString()
+                                ),
+                              ),
+                              color: primaryGreen,
+                            ),
+                            Container(
+                              width: width * 0.2,
+                              height: height * 0.2,
+                              child: IconButton(
+                                icon: Icon(Icons.check),
+                                color: Colors.green,
+                                onPressed: () {
+                                  var data = {
+                                    "friendUsername": playerNames[i],
+                                    "userId": userId
+                                  };
+                                  playerNames.removeAt(i);
+                                  callAcceptInvitation.call(data);
+                                  updated.value = !updated.value;
+                                  showToast("Invitation accepted");
+                                },
+                              ),
+                            ),
+                            Container(
+                              width: width * 0.2,
+                              height: height * 0.2,
+                              child: IconButton(
+                                icon: Icon(Icons.delete),
+                                color: Colors.red,
+                                onPressed: () {
+                                  var data = {
+                                    "friendUsername": playerNames[i],
+                                    "userId": userId
+                                  };
+                                  playerNames.removeAt(i);
+                                  updated.value = !updated.value;
+                                  callDeclineInvitation.call(data);
+                                  showToast("Invitation declined");
+                                },
+                              ),
+                            )
+                          ],
+                        ),
+                        color: primaryPurple,
+                      );
+                    },
+                  );
+                },
+                child: ListView.builder(
                   scrollDirection: Axis.vertical,
-                  children: users
+                  itemCount: playerNames.length,
+                  itemBuilder: (BuildContext context, int i) {
+                    return Container(
+                      width: width,
+                      height: height * 0.2,
+                      child: Row(
+                        children: <Widget>[
+                          Container(
+                            width: width * 0.6,
+                            height: height * 0.2,
+                            child: Center(
+                              child: Text(
+                                  playerNames[i].toString()
+                              ),
+                            ),
+                            color: primaryGreen,
+                          ),
+                          Container(
+                            width: width * 0.2,
+                            height: height * 0.2,
+                            child: IconButton(
+                              icon: Icon(Icons.check),
+                              color: Colors.green,
+                              onPressed: () {
+                                var data = {
+                                  "friendUsername": invitations[i],
+                                  "userId": userId
+                                };
+                                playerNames.removeAt(i);
+                                callAcceptInvitation.call(data);
+                                updated.value = !updated.value;
+                              },
+                            ),
+                          ),
+                          Container(
+                            width: width * 0.2,
+                            height: height * 0.2,
+                            child: IconButton(
+                              icon: Icon(Icons.delete),
+                              color: Colors.red,
+                              onPressed: () {
+                                var data = {
+                                  "friendUsername": invitations[i],
+                                  "userId": userId
+                                };
+                                playerNames.removeAt(i);
+                                callDeclineInvitation.call(data);
+                                updated.value = !updated.value;
+                              },
+                            ),
+                          )
+                        ],
+                      ),
+                      color: primaryPurple,
+                    );
+                  },
+                ),
               ),
             ),
           );
         },
       );
-      }
+    }
 
 
     Widget topBar() {
@@ -279,19 +349,24 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
 
     Widget friendsData() {
-      List<Widget> friends = new List<Widget>();
-
-      for(int i = 0; i < Result.value.length; i++) {
-        friends.add(drawUserData(mediaQueryWidth * 0.2, mediaQueryHeight * 0.8, Result.value[i]["username"],
-                                    Result.value[i]["singleGameWins"], Result.value[i]["teamGameWins"]));
+      if(Result.value.length == 0){
+        showToast("There are no friends to show.");
+        return Container(
+            width: mediaQueryWidth,
+            height: mediaQueryHeight * 0.6,
+        );
       }
 
       return Container(
         width: mediaQueryWidth,
         height: mediaQueryHeight * 0.6,
-        child: ListView(
+        child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          children: friends
+          itemCount: Result.value.length,
+          itemBuilder: (BuildContext context, int i) {
+            return drawUserData(mediaQueryWidth * 0.2, mediaQueryHeight * 0.8, Result.value[i]["username"],
+                Result.value[i]["singleGameWins"], Result.value[i]["teamGameWins"]);
+          },
         ),
       );
     }
@@ -313,12 +388,17 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 textColor: Colors.black,
                 text: "Invite a friend",
                 onPressed: () async {
+                  if(username == ProfileData.name) {
+                    showToast("You cannot add yourself as a friend!");
+                    return;
+                  }
                   var data = {
                     "userId": userId,
                     "friendUsername": username
                   };
-
                   await callAddFriend.call(data);
+                  username = "";
+                  showToast("Invitation sent to the user");
                 },
               ),
             )
