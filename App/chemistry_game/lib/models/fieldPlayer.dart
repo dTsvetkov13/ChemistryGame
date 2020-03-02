@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class FieldPlayer {
   String name;
   int cardsNumber;
