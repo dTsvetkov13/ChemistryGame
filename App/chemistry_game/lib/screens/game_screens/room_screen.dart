@@ -45,8 +45,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   String roomId;
   var playerName;
   List<FieldPlayer> fieldPlayers = new List<FieldPlayer>();
-
   Player player;
+
   _BuildRoomScreenState({this.roomId, this.playerId, this.lastCardData,
                           this.playerName, this.player, this.firebaseMessaging, this.fieldPlayers});
 
@@ -54,10 +54,25 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   ValueNotifier<BuildMenuShowingCardsType> buildMenuShowingCardsType =
                           new ValueNotifier<BuildMenuShowingCardsType>(BuildMenuShowingCardsType.ElementCards);
 
+  ValueNotifier<int> elementCardsInBuildMenuStartingIndex = new ValueNotifier<int>(0);
+  ValueNotifier<int> compoundCardsInBuildMenuStartingIndex = new ValueNotifier<int>(0);
+  int shownElementCardsInBuildMenu = 8;
+  int shownCompoundCardsInBuildMenu = 8;
+  var points = new ValueNotifier<int>(0);
+
   bool showElementCards = true;
   bool calledFunction = false;
 
   Reaction currReaction = Reaction();
+
+  List<String> textMessages = ["Hi", "Well played", "Good job", "Be careful"];
+  List<PopupMenuItem> textMessagesWidgets = new List<PopupMenuItem>();
+
+  bool completeReactionCalled = false;
+  String chatMsgSender = "";
+  var chatMsg = new ValueNotifier("");
+
+  final GlobalKey _menuKey = new GlobalKey();
 
   final HttpsCallable callPlaceCard = CloudFunctions.instance.getHttpsCallable(
     functionName: 'placeCard',
@@ -103,8 +118,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     _timer.cancel();
     super.dispose();
   }
-
-  var points = new ValueNotifier<int>(0);
 
   String playerToken;
   var toastMsg;
@@ -308,7 +321,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 if (buildMenuShowingCardsType.value ==
                     BuildMenuShowingCardsType.ElementCards) {
                   buildMenuShowingCardsType.value =
-                      BuildMenuShowingCardsType.ReactionCards;
+                      BuildMenuShowingCardsType.CompoundCards;
                 }
                 else {
                   buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ElementCards;
@@ -366,15 +379,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         toastLength: Toast.LENGTH_SHORT
     );
   }
-
-  List<String> textMessages = ["Hi", "Well played", "Good job", "Be careful"];
-  List<PopupMenuItem> textMessagesWidgets = new List<PopupMenuItem>();
-
-  bool completeReactionCalled = false;
-  String chatMsgSender = "";
-  var chatMsg = new ValueNotifier("");
-
-  final GlobalKey _menuKey = new GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -928,7 +932,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               child: Text("Compounds"),
               onPressed: () {
                 setState(() {
-                  buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ReactionCards;
+                  buildMenuShowingCardsType.value = BuildMenuShowingCardsType.CompoundCards;
                 });
               },
             ),
@@ -959,19 +963,59 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           switch(buildMenuShowingCardsType.value) {
             case (BuildMenuShowingCardsType.ElementCards):
               player.getElementCards().forEach((card) => cards.add(card.drawDraggableCard(width * 0.1, height)));
-              break;
-            case (BuildMenuShowingCardsType.ReactionCards):
-              player.compoundCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));
-              break;
-            /*case (BuildMenuShowingCardsType.AccelerationCards):
-              break;*/
-            default: print("Error, invalid type");
-          }
+              return Row(
+                children: <Widget>[
+                  drawBuildMenuLeftArrow(buildMenuShowingCardsType.value, width * 0.1),
+                  ValueListenableBuilder(
+                    valueListenable: elementCardsInBuildMenuStartingIndex,
+                    builder: (BuildContext context, int value, Widget child) {
+                      return Row(
+                        children: cards.sublist(elementCardsInBuildMenuStartingIndex.value,
+                            ((elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu) <= player.getElementCards().length ?
+                            elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu : player.getElementCards().length)),
+                      );
+                    },
+                    child: Container(),
+                  ),
+                  drawBuildMenuRightArrow(buildMenuShowingCardsType.value, width * 0.1),
+                ],
+              );
 
-          return ListView(
-            scrollDirection: Axis.horizontal,
-            children: cards,
-          );
+              break;
+            case (BuildMenuShowingCardsType.CompoundCards):
+              player.compoundCards.forEach((card) => cards.add(card.drawDraggable(width * 0.1, height)));
+//              cards.sublist(compoundCardsInBuildMenuStartingIndex.value,
+//                  (compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu - 1 <= player.compoundCards.length ?
+//                      compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu - 1 : player.compoundCards.length));
+
+              return Row(
+                children: <Widget>[
+                  drawBuildMenuLeftArrow(buildMenuShowingCardsType.value, width * 0.1),
+                  ValueListenableBuilder(
+                    valueListenable: compoundCardsInBuildMenuStartingIndex,
+                    builder: (BuildContext context, int value, Widget child) {
+                      return Row(
+                        children: cards.sublist(compoundCardsInBuildMenuStartingIndex.value,
+                            ((compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu) <= player.compoundCards.length ?
+                            compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu : player.compoundCards.length)),
+                      );
+                    },
+                    child: Container(),
+                  ),
+                  drawBuildMenuRightArrow(buildMenuShowingCardsType.value, width * 0.1),
+                ],
+              );
+
+              break;
+          /*case (BuildMenuShowingCardsType.AccelerationCards):
+            break;*/
+            default: {
+              print("Error, invalid type");
+              return Container(
+
+              );
+            }
+          }
         },
         child: Container(
           width: width,
@@ -983,28 +1027,150 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     );
   }
 
-  void showSettingsDialog(double width, double height) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(child: Text("Settings")),
-          content: Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration( //TODO: Make it responsible
-                border: Border.all(
-                  width: 0.2,
-                  color: Colors.black,
-                )
-            ),
-            child: settingsOptions(width, height)
-          ),
+  Widget drawBuildMenuLeftArrow(BuildMenuShowingCardsType buildMenuShowingCardsType, double width) {
+    switch(buildMenuShowingCardsType) {
+      case (BuildMenuShowingCardsType.ElementCards):
+        return ValueListenableBuilder(
+          valueListenable: elementCardsInBuildMenuStartingIndex,
+          builder: (BuildContext context, int value, Widget child) {
+            if(value - shownElementCardsInBuildMenu >= 0) {
+              return Container(
+                width: width,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back, color: primaryGreen),
+                  onPressed: () {
+                    setState(() {
+                      elementCardsInBuildMenuStartingIndex.value -= shownElementCardsInBuildMenu;
+                    });
+                  },
+                ),
+              );
+            }
+            else {
+              return Container(
+                width: 0,
+                height: 0,
+              );
+            }
+          },
+          child: Container(),
         );
-      }
-    );
+        break;
+      case(BuildMenuShowingCardsType.CompoundCards):
+        return ValueListenableBuilder(
+          valueListenable: compoundCardsInBuildMenuStartingIndex,
+          builder: (BuildContext context, int value, Widget child) {
+            if(value - shownCompoundCardsInBuildMenu >= 0) {
+              return Container(
+                width: width,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back, color: primaryGreen),
+                  onPressed: () {
+                    setState(() {
+                      compoundCardsInBuildMenuStartingIndex.value -= shownCompoundCardsInBuildMenu;
+                    });
+                  },
+                ),
+              );
+            }
+            else {
+              return Container(
+                width: 0,
+                height: 0,
+              );
+            }
+          },
+          child: Container(),
+        );
+        break;
+      default:
+        return Container();
+    }
   }
+
+  Widget drawBuildMenuRightArrow(BuildMenuShowingCardsType buildMenuShowingCardsType, double width) {
+    switch(buildMenuShowingCardsType) {
+      case (BuildMenuShowingCardsType.ElementCards):
+        return ValueListenableBuilder(
+          valueListenable: elementCardsInBuildMenuStartingIndex,
+          builder: (BuildContext context, int value, Widget child) {
+            if(value + shownElementCardsInBuildMenu < player.getElementCards().length) {
+              return Container(
+                width: width,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_forward, color: primaryGreen),
+                  onPressed: () {
+                    setState(() {
+                      elementCardsInBuildMenuStartingIndex.value += shownElementCardsInBuildMenu;
+                    });
+                  },
+                ),
+              );
+            }
+            else {
+              return Container(
+                width: 0,
+                height: 0,
+              );
+            }
+          },
+          child: Container(),
+        );
+        break;
+      case(BuildMenuShowingCardsType.CompoundCards):
+        return ValueListenableBuilder(
+          valueListenable: compoundCardsInBuildMenuStartingIndex,
+          builder: (BuildContext context, int value, Widget child) {
+            if(value + shownCompoundCardsInBuildMenu < player.compoundCards.length) {
+              return Container(
+                width: width,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_forward, color: primaryGreen),
+                  onPressed: () {
+                    setState(() {
+                      compoundCardsInBuildMenuStartingIndex.value += shownCompoundCardsInBuildMenu;
+                    });
+                  },
+                ),
+              );
+            }
+            else {
+              return Container(
+                width: 0,
+                height: 0,
+              );
+            }
+          },
+          child: Container(),
+        );
+        break;
+      default:
+        return Container();
+    }
+  }
+
+//  void showSettingsDialog(double width, double height) {
+//    showDialog(
+//      context: context,
+//      barrierDismissible: true,
+//      builder: (BuildContext context) {
+//        return AlertDialog(
+//          title: Center(child: Text("Settings")),
+//          content: Container(
+//            width: width,
+//            height: height,
+//            decoration: BoxDecoration( //TODO: Make it responsible
+//                border: Border.all(
+//                  width: 0.2,
+//                  color: Colors.black,
+//                )
+//            ),
+//            child: settingsOptions(width, height)
+//          ),
+//        );
+//      }
+//    );
+//  }
 
   Widget leaveButton(double width, double height) {
     return Container(
@@ -1199,6 +1365,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
 enum BuildMenuShowingCardsType {
  ElementCards,
- ReactionCards
+ CompoundCards
  ///AccelerationCards // in future
 }
