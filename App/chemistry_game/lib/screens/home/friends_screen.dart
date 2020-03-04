@@ -71,6 +71,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
       };
 
       Result.value = (await callGetAllFriends.call(data)).data;
+
+      if(Result.value.length == 0){
+        showToast("There are no friends to show.");
+      }
     });
   }
 
@@ -351,14 +355,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
 
     Widget friendsData() {
-      if(Result.value.length == 0){
-        showToast("There are no friends to show.");
-        return Container(
-            width: mediaQueryWidth,
-            height: mediaQueryHeight * 0.6,
-        );
-      }
-
       return Container(
         width: mediaQueryWidth,
         height: mediaQueryHeight * 0.6,
