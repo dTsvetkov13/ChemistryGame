@@ -40,11 +40,11 @@ export const addLeftPlayer1 = functions.https.onCall(async (data, context) => {
 	}
 	else
 	{
-		await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
 		await roomDataRef.update({"leftPlayers": admin.firestore.FieldValue.arrayUnion(playerId)});
+		await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
 	}
 
-	if(roomData.get("leftPlayers").length >= 2)
+	if(roomData.get("leftPlayers")?.length >= 2)
 	{
 		await admin.firestore().collection("roomsTurnData").doc(roomId).update({"finishedPlayers": 2});
 	}
