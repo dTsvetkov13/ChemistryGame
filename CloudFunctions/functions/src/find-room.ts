@@ -63,7 +63,7 @@ async function createRoom(data: any) {
 	switch (gameType) {
 		case "SingleGame":
 			const playerId = data.playerId ? data.playerId.toString() : "";
-			const playerToken = data.token ? data.playerToken : "";
+			const playerToken = data.playerToken ? data.playerToken : "";
 
 			await roomRef.update({"freeSeats": 3});
 
