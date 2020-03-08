@@ -145,6 +145,11 @@ async function finishGame(roomId: string)
 				else if(p1.points < p2.points) return 1;
 				else
 				{
+					if(finishedPlayers === undefined)
+					{
+						return 0;
+					}
+
 					if(p1.id === finishedPlayers[0])
 					{
 						return -1;
@@ -259,8 +264,8 @@ async function finishGame(roomId: string)
 
 			await admin.firestore().collection("users").doc(playerData[1].id)
 					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
-				await admin.firestore().collection("users").doc(playerData[3].id)
-					.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
+			await admin.firestore().collection("users").doc(playerData[3].id)
+				.update({"teamGameWins": admin.firestore.FieldValue.increment(1)});
 			break
 	}
 
@@ -271,15 +276,22 @@ async function finishGame(roomId: string)
 		await admin.messaging().unsubscribeFromTopic(subscribedTokens[i], roomId);
 	}
 
-	for(let i = 0; i < await playerData.length; i++)
+	for(let i = 0; i < playerData.length; i++)
 	{
-		admin.firestore().collection("players").doc(playerData[i].id).delete()
+		await admin.firestore().collection("players").doc(playerData[i].id).delete()
 		.then(function() {
 			console.log("Document successfully deleted!");
 		}).catch(function(error) {
 			console.error("Error removing document: ", error);
 		});
 	}
+
+	await admin.firestore().collection("roomsTurnData").doc(roomId).delete()
+		.then(function() {
+			console.log("roomTurnData successfully deleted!");
+		}).catch(function(error) {
+			console.error("Error removing roomTurnData: ", error);
+		});
 
 	console.log("End");
 }
