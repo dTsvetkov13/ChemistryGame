@@ -21,9 +21,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
               color: Colors.white,
             ),
             Text(
-              "Loading",
+              "Waiting for other players...",
             ),
-
           ],
         ),
       ),
