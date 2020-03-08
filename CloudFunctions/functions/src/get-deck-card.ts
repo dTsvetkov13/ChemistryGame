@@ -36,17 +36,6 @@ export const getDeckCard1 = functions.https.onCall(async(data, context) => {
 
 		const cardToGiveData = cardData.uuid + "," + await getCardData(cardToGiveName);
 
-		// var getDeckCardMsg = {
-		// 	"notification": {
-		// 		"title": "Receive Deck Card",
-		// 		"body": "You successfully received a card from the deck"
-		// 	},
-		// 	"data": {
-		// 		"cardToGiveData": cardToGiveData
-		// 	}
-		// };
-
-		// await admin.messaging().sendToDevice(playerToken, getDeckCardMsg);
 		return cardToGiveData;
 	}
 	else {
