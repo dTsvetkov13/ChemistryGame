@@ -11,22 +11,34 @@ export const leaveRoom1 = functions.https.onCall(async (data, context) => { //NO
 		case "SingleGame":
 			const playerId = data.playerId.toString();
 
+			if((await roomRef.get()).get("freeSeats") === 0)
+			{
+				console.log("Cannnot leave the room");
+				return false;
+			}
+
 			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(playerId)});
 
 			await roomRef.update({freeSeats : admin.firestore.FieldValue.increment(1)});
 
-			break;
+			return true;
 		case "TeamGame":
-			//const firstPlayerId = data.firstPlayerId.toString();
-			//const secondPlayerId = data.secondPlayerId.toString();
-
-			//await roomRef.delete({"teams.secondTeam" : {"points": 0}}}); //, [secondPlayerId] : {"points": 0}
-
-			//TODO: delete 2 players
+			if((await roomRef.get()).get("freeSeats") === 0)
+			{
+				console.log("Cannnot leave the room");
+				return false;
+			}
+			
+			const firstPlayerId = data.firstPlayerId.toString();
+			const secondPlayerId = data.secondPlayerId.toString();
+		
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(firstPlayerId)});
+			await roomDataRef.update({"players": admin.firestore.FieldValue.arrayRemove(secondPlayerId)});
 
 			await roomRef.update({"freeSeats": admin.firestore.FieldValue.increment(2)});
-			break;
+			return true;
 		default:
+			return false;
 			break;
 	}
 })
