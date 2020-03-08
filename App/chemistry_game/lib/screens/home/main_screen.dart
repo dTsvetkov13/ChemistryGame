@@ -204,6 +204,11 @@ class _MainScreenState extends State<MainScreen> {
                                 "secondPlayerId": senderId
                               };
 
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => LoadingScreen())
+                              );
+
                               callFindRoom.call(data);
                             },
                           ),
