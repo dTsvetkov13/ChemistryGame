@@ -56,7 +56,7 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 
 			console.log("Start the Game");
 
-			admin.firestore().collection("rooms").doc(change.after.id).delete()
+			await admin.firestore().collection("rooms").doc(change.after.id).delete()
 			.then(function() {
 				console.log("Room successfully deleted!");
 			}).catch(function(error) {
@@ -109,7 +109,7 @@ async function dealing (data: any) {
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["Na", "Na", "Na", "Na", "Mg", "Mg", "Mg", "Mg", "P", "", "Al", "P", "Si", "S", "", "Si", "Al", "S", "P", "", "P", "S", "Al", "Si", "", "S", "Si", "P", "Al"]; //Hardcoded for test
+	let elementCards = ["Na", "Na", "Na", "Na", "Mg", "Mg", "Mg", "Mg", "P", "Al", "P", "Si", "S", "Si", "Al", "S", "P", "P", "S", "Al", "Si", "S", "Si", "P", "Al"]; //Hardcoded for test
 	
 	// const elementCards = await generateNewDeck();
 	
