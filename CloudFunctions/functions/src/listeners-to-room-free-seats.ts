@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-import {getCardData, addNewElementCard, addNewCompoundCard} from "./utils";
+import {getCardData, addNewElementCard, addNewCompoundCard} from "./utils"; 
 
 export const listenersToRoomFreeSeats1 = functions.firestore
     .document('/rooms/{roomId}')
@@ -55,6 +55,13 @@ export const listenersToRoomFreeSeats1 = functions.firestore
 			await roomTurnDataRef.update({"finishedPlayers": admin.firestore.FieldValue.increment(-1)}); //TODO: change to -2
 
 			console.log("Start the Game");
+
+			admin.firestore().collection("rooms").doc(change.after.id).delete()
+			.then(function() {
+				console.log("Room successfully deleted!");
+			}).catch(function(error) {
+				console.error("Error removing room: ", error);
+			});
 		}
 		else
 		{
@@ -102,11 +109,11 @@ async function dealing (data: any) {
 	const compoundCardsToDeal = 2; //TODO: change to n
 	const playersCount = 4; //TODO: change to 4
 
-	let elementCards = ["H", "O", "Cl", "Cl", "Al", "Al", "Na", "Na", "H", "H", "H", "H", "Al", "Be"]; //TODO: get them from somewhere
+	let elementCards = ["Na", "Na", "Na", "Na", "Mg", "Mg", "Mg", "Mg", "P", "", "Al", "P", "Si", "S", "", "Si", "Al", "S", "P", "", "P", "S", "Al", "Si", "", "S", "Si", "P", "Al"]; //Hardcoded for test
 	
 	// const elementCards = await generateNewDeck();
 	
-	let compoundCards = ["H2O", "H2O", "H2O", "H2O", "NaCl", "NaCl", "NaCl", "NaCl", "NaCl"]; //TODO: get them from somewhere
+	let compoundCards = ["NaCl", "NaCl", "NaCl", "NaCl", "MgCl2", "MgCl2", "MgCl2", "MgCl2"]; //Hardcoded for test
 
 	for(let i = 0; i < playersCount; i++)
 	{
