@@ -6,9 +6,17 @@ class ElementCard extends card{
   String name;
   String group;
   int period;
+  bool isDiatomic = false;
 
   ElementCard({this.name, this.group, this.period}) {
-    //TODO: check name for H, 0, I, etc... and change them to H2, etc
+    List<String> diatomicElements = new List<String>();
+    diatomicElements = ["H", "O", "N", "I", "F", "Cl", "Br"];
+
+    for(int i = 0; i < diatomicElements.length; i++) {
+      if(this.name == diatomicElements[i]) {
+        isDiatomic = true;
+      }
+    }
   }
 
   ElementCard.fromString(String data){
@@ -17,6 +25,15 @@ class ElementCard extends card{
     this.name = splitted[1];
     this.group = splitted[2];
     this.period = int.parse(splitted[3]);
+
+    List<String> diatomicElements = new List<String>();
+    diatomicElements = ["H", "O", "N", "I", "F", "Cl", "Br"];
+
+    for(int i = 0; i < diatomicElements.length; i++) {
+      if(this.name == diatomicElements[i]) {
+        isDiatomic = true;
+      }
+    }
   }
 
   Container draw(double width, double height) {
@@ -48,9 +65,16 @@ class ElementCard extends card{
           Container(
             height: height * 0.3,
             width: width,
-            child: Text(
-              name,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: height * 0.2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  name,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: height * 0.2),
+                ),
+                isDiatomic ? Text("2") : Container(width: 0, height: 0,)
+              ],
             ),
             alignment: Alignment.center,
           ),

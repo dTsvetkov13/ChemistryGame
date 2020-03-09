@@ -177,17 +177,22 @@ class Reaction {
                   exists.value = false;
                 }
 
-                if(card is ElementCard) {
-                  card.usedInReaction = false;
-                }
+                card.usedInReaction = false;
+
                 updated.value = !updated.value;
               },
               child: Center(child: Text("X"))
             ),
           ),
           card != null ? Container(
-            child: Center(
-              child: Text(card.name),
+            width: width,
+            height: height * 0.77,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Text(card.name),
+              ],
             )
           ) : drawEmptyCardDragTarget(width, height * 0.77, uuid),//TODO: check the height
         ],
