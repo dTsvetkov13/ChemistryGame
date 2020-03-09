@@ -46,16 +46,19 @@ export async function addNewCompoundCard(name: string, playerId: string)
 	return {name: name, uuid: uuid};
 }
 
+//Hardcoded for test
 export async function generateNewDeck()
 {
 	var deck = new Array<string>();
 
-	await admin.firestore().collection("elementCards").get()
-		.then(function(querySnapshot)  {
-			querySnapshot.forEach(function (doc) {
-				deck.push(doc.data().symbol);
-			});
-		})
+	deck = ["Si", "P", "S", "Al"];
+
+	// await admin.firestore().collection("elementCards").get()
+	// 	.then(function(querySnapshot)  {
+	// 		querySnapshot.forEach(function (doc) {
+	// 			deck.push(doc.data().symbol);
+	// 		});
+	// 	})
 
 	deck = shuffleArray(deck);
 	
