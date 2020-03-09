@@ -293,6 +293,20 @@ async function finishGame(roomId: string)
 			console.error("Error removing roomTurnData: ", error);
 		});
 
+	await admin.firestore().collection("roomCardsData").doc(roomId).delete()
+		.then(function() {
+			console.log("roomCardsData successfully deleted!");
+		}).catch(function(error) {
+			console.error("Error removing roomCardsData: ", error);
+		});
+
+	await admin.firestore().collection("roomsData").doc(roomId).delete()
+		.then(function() {
+			console.log("roomData successfully deleted!");
+		}).catch(function(error) {
+			console.error("Error removing roomData: ", error);
+		});
+
 	console.log("End");
 }
 
