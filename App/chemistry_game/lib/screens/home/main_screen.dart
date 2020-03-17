@@ -2,8 +2,10 @@ import 'package:chemistry_game/models/element_card.dart';
 import 'package:chemistry_game/models/fieldPlayer.dart';
 import 'package:chemistry_game/models/player.dart';
 import 'package:chemistry_game/models/profile_data.dart';
+import 'package:chemistry_game/models/remote_config.dart';
 import 'package:chemistry_game/screens/loading_screen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/screens/game_screens/room_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -20,11 +22,19 @@ class MainScreen extends StatefulWidget {
 
   final String userId;
 
+  static String singleModeText = "";
+  static String teamModeText = "";
+  static String playButtonText = "";
+  static String inviteMsg = "";
+  static String receiveMsg = "";
+
   MainScreen({this.userId});
 
 
   @override
-  _MainScreenState createState() => _MainScreenState(userId: userId);
+  _MainScreenState createState() {
+    return _MainScreenState(userId: userId);
+  }
 }
 
 class _MainScreenState extends State<MainScreen> {
@@ -34,8 +44,8 @@ class _MainScreenState extends State<MainScreen> {
   _MainScreenState({this.userId});
 
   static Map<GameType, Widget> gameTypeWindow = {
-    GameType.singleGame: createGameWindow("Single Mode"),
-    GameType.teamGame: createGameWindow("Team Mode"),
+    GameType.singleGame: createGameWindow(MainScreen.singleModeText),
+    GameType.teamGame: createGameWindow(MainScreen.teamModeText),
   };
 
   static ValueNotifier<int> currentIndex = ValueNotifier<int>(0);
@@ -113,6 +123,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     print("built");
     super.initState();
+    getMainScreenData();
     _firebaseMessaging.configure(
       onMessage: (Map<String, dynamic> message) async {
         var data = message["notification"];
@@ -171,7 +182,7 @@ class _MainScreenState extends State<MainScreen> {
               builder: (BuildContext context) {
                 return AlertDialog(
                   title: Text(
-                      senderName.toString() + " wants to play a Multiplayer Game with you. Join him?"
+                      senderName.toString() + MainScreen.receiveMsg,
                   ),
 
                   content: Container(
@@ -395,7 +406,7 @@ class _MainScreenState extends State<MainScreen> {
                   radius: 52.0,
                   background: theme.buttonColor,
                   textColor: Colors.black,
-                  text: "Play",
+                  text: MainScreen.playButtonText,
                   onPressed: () async {
                     if(!playBtnCalled) {
                       switch (currGT.value) {
@@ -441,7 +452,7 @@ class _MainScreenState extends State<MainScreen> {
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: Center(child: Text("Invite a friend")),
+                                title: Center(child: Text(MainScreen.inviteMsg)),
                                 content: Container(
                                   width: mediaQueryData.size.width * 0.5,
                                   height: mediaQueryData.size.height * 0.6,

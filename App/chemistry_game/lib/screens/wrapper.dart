@@ -1,4 +1,7 @@
+import 'package:chemistry_game/models/remote_config.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:chemistry_game/models/User.dart';
 import 'package:chemistry_game/screens/home/home.dart';
@@ -10,17 +13,40 @@ class Wrapper extends StatefulWidget {
 }
 
 class _WrapperState extends State<Wrapper> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    remoteConfigInit();
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: gotData,
+      child: Container(),
+      builder: (BuildContext context, bool value, Widget chikd) {
+        if(value) {
+          final user = Provider.of<User>(context);
 
-    final user = Provider.of<User>(context);
-
-    if(user == null) {
-      return Authenticate();
-    }
-    else {
-      print('user - ${user.uid}');
-      return HomeScreen();
-    }
+          if(user == null) {
+            return Authenticate();
+          }
+          else {
+            print('user - ${user.uid}');
+            return HomeScreen();
+          }
+        }
+        else {
+          return Container(
+            color: primaryGreen,
+            child: SpinKitFadingCircle(
+              color: Colors.white,
+            ),
+          );
+        }
+      },
+    );
   }
 }

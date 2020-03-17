@@ -1,4 +1,5 @@
 import 'package:chemistry_game/models/profile_data.dart';
+import 'package:chemistry_game/screens/home/profile_screen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -129,7 +130,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     List<Widget> _widgetOptions = <Widget>[
       MainScreen(userId: user.uid),
-//      ProfileScreen(userId: user.uid),
+      ProfileScreen(userId: user.uid),
       FriendsScreen(userId: user.uid,),
       RankingScreen()
     ];
@@ -193,15 +194,15 @@ class HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(context);
                 },
               ),
-//              ListTile(
-//                title: Text('Profile'),
-//                onTap: () {
-//                  setState(() {
-//                    _selectedIndex = 1;
-//                  });
-//                  Navigator.pop(context);
-//                },
-//              ),
+              ListTile(
+                title: Text('Profile'),
+                onTap: () {
+                  setState(() {
+                    _selectedIndex = 1;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
               ListTile(
                 title: Row(
                   children: <Widget>[
@@ -213,7 +214,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 1;
+                    _selectedIndex = 2;
                   });
                   Navigator.pop(context);
                 },
@@ -229,7 +230,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 2;
+                    _selectedIndex = 3;
                   });
                   Navigator.pop(context);
                 },

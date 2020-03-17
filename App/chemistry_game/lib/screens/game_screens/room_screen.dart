@@ -31,6 +31,8 @@ class BuildRoomScreen extends StatefulWidget {
   BuildRoomScreen({this.roomId, this.playerId, this.fieldPlayers,
                     this.lastCardData, this.playerName, this.player, this.firebaseMessaging});
 
+  static String inGameMessages = "";
+
   @override
   _BuildRoomScreenState createState() => _BuildRoomScreenState(roomId: roomId, playerId: playerId,
                     lastCardData: lastCardData,
@@ -65,7 +67,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   Reaction currReaction = Reaction();
 
-  List<String> textMessages = ["Hi", "Well played", "Good job", "Be careful"];
+  List<String> textMessages = BuildRoomScreen.inGameMessages.split(",");
   List<PopupMenuItem> textMessagesWidgets = new List<PopupMenuItem>();
 
   bool completeReactionCalled = false;

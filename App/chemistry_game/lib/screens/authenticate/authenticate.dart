@@ -1,3 +1,4 @@
+import 'package:chemistry_game/models/remote_config.dart';
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/services/database.dart';
 import 'package:chemistry_game/theme/colors.dart';
@@ -16,6 +17,13 @@ class Authenticate extends StatefulWidget {
 }
 
 class AuthenticateState extends State<Authenticate> {
+
+  static String mainLoginButtonText = "";
+  static String secondaryLoginButtonText = "";
+  static String mainRegisterButtonText = "";
+  static String secondaryRegisterButtonText = "";
+  static String informationButtonText = "";
+  static String informationText = "";
 
   bool loginAreaFirstChild = true;
   bool registerAreaFirstChild = true;
@@ -41,6 +49,13 @@ class AuthenticateState extends State<Authenticate> {
   );
 
   bool _saving = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getAuthenticateData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +124,7 @@ class AuthenticateState extends State<Authenticate> {
           radius: 52.0,
           background: primaryGreen,
           textColor: Colors.black,
-          text: "Login",
+          text: mainLoginButtonText,
           onPressed: () {
             print("Login pressed");
             setState(() {
@@ -205,7 +220,7 @@ class AuthenticateState extends State<Authenticate> {
             ),
             RaisedButton(
               child: Text(
-                'Login',
+                secondaryLoginButtonText,
                 textScaleFactor: 1.5,
               ),
               onPressed: () async {
@@ -263,7 +278,7 @@ class AuthenticateState extends State<Authenticate> {
             radius: 52.0,
             background: primaryGreen,
             textColor: Colors.black,
-            text: "Register",
+            text: mainRegisterButtonText,
             //padding: EdgeInsets.symmetric(horizontal: (mediaQueryData.size.width/10)*3.5, vertical: mediaQueryData.size.height*(0.03)),
             onPressed: () {
               print("Register pressed");
@@ -386,7 +401,7 @@ class AuthenticateState extends State<Authenticate> {
 //              textColor: Colors.black,
 //              radius: 52.0,
               child: Text(
-                "Register",
+                secondaryRegisterButtonText,
                 textScaleFactor: 1.5,
               ),
               onPressed: () async {
@@ -432,7 +447,7 @@ class AuthenticateState extends State<Authenticate> {
             radius: 52.0,
             background: primaryGreen,
             textColor: Colors.black,
-            text: "Information",
+            text: informationButtonText,
             onPressed: () {
               print("Information pressed");
               //TODO: Change the state of the AnimatedFade
