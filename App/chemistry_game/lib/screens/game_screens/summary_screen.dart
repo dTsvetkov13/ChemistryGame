@@ -1,6 +1,8 @@
 import 'package:chemistry_game/screens/home/home.dart';
 import 'package:chemistry_game/screens/home/main_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:confetti/confetti.dart';
+import 'dart:math';
 
 class PlayerData{
   String name;
@@ -14,6 +16,9 @@ class SummaryScreen extends StatelessWidget {
 
   GameType gameType;
   final List<PlayerData> playersData = new List<PlayerData>();
+
+  ConfettiController _controllerCenterLeft;
+  ConfettiController _controllerCenterRight;
 
   SummaryScreen(List<String> players, GameType gameType)
   {
@@ -58,6 +63,12 @@ class SummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
+    _controllerCenterRight =
+        ConfettiController(duration: Duration(seconds: 20));
+    _controllerCenterLeft = ConfettiController(duration: Duration(seconds: 20));
+    _controllerCenterLeft.play();
+    _controllerCenterRight.play();
+
     final mediaQueryData = MediaQuery.of(context);
     final mediaQueryWidth = mediaQueryData.size.width;
     final mediaQueryHeight = mediaQueryData.size.height;
@@ -78,6 +89,28 @@ class SummaryScreen extends StatelessWidget {
                     )
                 ),
               ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConfettiWidget(
+              confettiController: _controllerCenterLeft,
+              blastDirection: 0, // radial value - LEFT
+              emissionFrequency: 0.05,
+              numberOfParticles: 10,
+              shouldLoop: false,
+              colors: [Colors.green, Colors.blue, Colors.pink], // manually specify the colors to be used
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConfettiWidget(
+              confettiController: _controllerCenterRight,
+              blastDirection: pi, // radial value - LEFT
+              emissionFrequency: 0.05,
+              numberOfParticles: 10,
+              shouldLoop: false,
+              colors: [Colors.green, Colors.blue, Colors.pink], // manually specify the colors to be used
             ),
           ),
           Column(
