@@ -337,7 +337,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 listViewStartingIndex = listViewStartingIndex;
               });
 
-              if(message["data"].containsKey("cardToAdd")) //TODO: see why this do not work
+              if(message["data"].containsKey("cardToAdd"))
               {
                 print("Card to add");
                 cardToAdd = message["data"]["cardToAdd"];

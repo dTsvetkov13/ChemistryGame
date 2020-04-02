@@ -55,6 +55,7 @@ class AuthenticateState extends State<Authenticate> {
     // TODO: implement initState
     super.initState();
     getAuthenticateData();
+    getRoomScreenData();
   }
 
   @override
