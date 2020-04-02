@@ -49,4 +49,22 @@ class Player{
   void addCompoundCard(CompoundCard compoundCard) {
     compoundCards.add(compoundCard);
   }
+
+  void setCardToSeen(String uuid, String name) {
+    if(elementCards.containsKey(name)) {
+      elementCards[name].forEach( (e) {
+        if(e.uuid == uuid) {
+          e.seen = true;
+          return;
+        }
+      });
+    }
+
+    compoundCards.forEach((c) {
+      if(c.uuid == uuid) {
+        c.seen = true;
+        return;
+      }
+    });
+  }
 }

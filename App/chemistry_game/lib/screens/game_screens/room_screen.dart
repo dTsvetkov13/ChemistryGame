@@ -410,10 +410,18 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     player.getElementCards().forEach( (e) => elementCards.add(e.drawDraggableElementCard(mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)));
 
     ListView getElementCards(int startingIndex) {
+
+      int endIndex = startingIndex+6 > player.getElementCards().length ? player.getElementCards().length : startingIndex+6;
+
+      List<ElementCard> temp = player.getElementCards();
+
+      for(int i = startingIndex; i < endIndex; i++) {
+        player.setCardToSeen(temp.elementAt(i).uuid, temp.elementAt(i).name);
+      }
+
       return ListView(
         scrollDirection: Axis.horizontal,
-        children: elementCards.sublist(startingIndex,
-            startingIndex+6 > player.getElementCards().length ? player.getElementCards().length : startingIndex+6)
+        children: elementCards.sublist(startingIndex, endIndex)
       );
     }
 
@@ -915,6 +923,17 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
   }
 
   Widget drawCardTypeButtons(double width, double height) {
+
+    int unseenElementCards = 0;
+    player.getElementCards().forEach( (e) {
+      if(!e.seen) unseenElementCards++;
+    });
+
+    int unseenCompoundCards = 0;
+    player.compoundCards.forEach( (c) {
+      if(!c.seen) unseenCompoundCards++;
+    });
+
     return Container(
       width: width,
       height: height,
@@ -925,7 +944,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             height: height * 0.3,
             child: RaisedButton(
               child: Badge(
-                badgeContent: Text('3'),
+                badgeContent: Text(unseenElementCards.toString()),
                 child: Container(
                   child: Text(
                       "Elements"
@@ -942,7 +961,10 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           Container(
             height: height * 0.3,
             child: RaisedButton(
-              child: Text("Compounds"),
+              child: Badge(
+                badgeContent: Text(unseenCompoundCards.toString()) ,
+                child: Text("Compounds")
+              ),
               onPressed: () {
                 setState(() {
                   buildMenuShowingCardsType.value = BuildMenuShowingCardsType.CompoundCards;
@@ -976,16 +998,25 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           switch(buildMenuShowingCardsType.value) {
             case (BuildMenuShowingCardsType.ElementCards):
               player.getElementCards().forEach((card) => cards.add(card.drawDraggableCard(width * 0.1, height)));
+
               return Row(
                 children: <Widget>[
                   drawBuildMenuLeftArrow(buildMenuShowingCardsType.value, width * 0.1),
                   ValueListenableBuilder(
                     valueListenable: elementCardsInBuildMenuStartingIndex,
                     builder: (BuildContext context, int value, Widget child) {
+
+                      int endIndex = ((elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu) <= player.getElementCards().length ?
+                      elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu : player.getElementCards().length);
+
+                      var temp = player.getElementCards();
+
+                      for(int i = value; i < endIndex; i++) {
+                        player.setCardToSeen(temp.elementAt(i).uuid, temp.elementAt(i).name);
+                      }
+
                       return Row(
-                        children: cards.sublist(elementCardsInBuildMenuStartingIndex.value,
-                            ((elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu) <= player.getElementCards().length ?
-                            elementCardsInBuildMenuStartingIndex.value + shownElementCardsInBuildMenu : player.getElementCards().length)),
+                        children: cards.sublist(elementCardsInBuildMenuStartingIndex.value, endIndex),
                       );
                     },
                     child: Container(),
@@ -1007,10 +1038,18 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                   ValueListenableBuilder(
                     valueListenable: compoundCardsInBuildMenuStartingIndex,
                     builder: (BuildContext context, int value, Widget child) {
+
+                      int endIndex = ((compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu) <= player.compoundCards.length ?
+                      compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu : player.compoundCards.length);
+
+                      var temp = player.compoundCards;
+
+                      for(int i = value; i < endIndex; i++) {
+                        player.setCardToSeen(temp.elementAt(i).uuid, temp.elementAt(i).name);
+                      }
+
                       return Row(
-                        children: cards.sublist(compoundCardsInBuildMenuStartingIndex.value,
-                            ((compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu) <= player.compoundCards.length ?
-                            compoundCardsInBuildMenuStartingIndex.value + shownCompoundCardsInBuildMenu : player.compoundCards.length)),
+                        children: cards.sublist(compoundCardsInBuildMenuStartingIndex.value, endIndex),
                       );
                     },
                     child: Container(),
