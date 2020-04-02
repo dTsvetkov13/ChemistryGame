@@ -6,7 +6,7 @@ import { addNewElementCard, getCardData, sendFinishedPlayerMsg, addNewCompoundCa
 // const waApi = WolframAlphaAPI("Q9UK6A-A6767WAL27");
 
 //Hardcoded for test
-export const completeReaction1 = functions.https.onCall(async (data, context) => {
+export const completeReaction1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const playerId = data.playerId.toString();
 	const leftSideCards = data.leftSideCards ? data.leftSideCards : [];
 	const rightSideCards = data.rightSideCards ? data.rightSideCards : [];

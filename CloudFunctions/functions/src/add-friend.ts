@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const addFriend1 = functions.https.onCall(async (data, context) => {
+export const addFriend1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const friendUsername = data.friendUsername;
 	const userId = data.userId;
 	const friendUid = await (await admin.auth().getUserByEmail(friendUsername + "@domain.com")).uid;

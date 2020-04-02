@@ -27,10 +27,19 @@ import { setAllPlayersAsReady1 } from './set-all-players-as-ready';
 
 const serviceAccount = require("../chemistrygame-cd3a6-firebase-adminsdk-cd58r-855bee1b82");
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://chemistrygame-cd3a6.firebaseio.com"
-});
+let initialized = false;
+
+if(!initialized)
+{
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://chemistrygame-cd3a6.firebaseio.com"
+  });
+
+  console.log("Initializing");
+
+  initialized = true;
+}
 
 export const acceptInvitation = acceptInvitation1;
 export const acceptTeamInvitation = acceptTeamInvitation1;

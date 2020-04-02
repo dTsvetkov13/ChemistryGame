@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const getTopTen1 = functions.https.onCall(async (data, context) => {
+export const getTopTen1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const sortedBy = data.sortedBy;
 
 	let resultData = new Array<{name: string, wins: number}>();

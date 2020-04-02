@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 const uuidv4 = require('uuid/v4');
 
-export const findRoom1 = functions.https.onCall(async (data, context) => {
+export const findRoom1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const gameType = data.gameType.toString();
 
 	const roomsRef = admin.firestore().collection("rooms");

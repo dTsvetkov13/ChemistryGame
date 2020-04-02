@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { sendFinishedPlayerMsg, getCardData } from "./utils";
 
-export const placeCard1 = functions.https.onCall(async (data, context) => {
+export const placeCard1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const playerId = data.playerId.toString();
 	const cardName = data.cardName;
 	const cardUuid = data.cardUuid;

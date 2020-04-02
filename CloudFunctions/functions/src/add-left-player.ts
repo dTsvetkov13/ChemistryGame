@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const addLeftPlayer1 = functions.https.onCall(async (data, context) => {
+export const addLeftPlayer1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const playerId = data.playerId;
 	const roomId = data.roomId;
 

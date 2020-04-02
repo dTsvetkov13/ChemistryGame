@@ -49,7 +49,7 @@ export async function addNewCompoundCard(name: string, playerId: string)
 //Hardcoded for test
 export async function generateNewDeck()
 {
-	var deck = new Array<string>();
+	let deck = new Array<string>();
 
 	deck = ["Si", "P", "S", "Al"];
 
@@ -63,6 +63,17 @@ export async function generateNewDeck()
 	deck = shuffleArray(deck);
 	
 	return deck;
+}
+
+export async function generateCompoundCards()
+{
+	let cards = new Array<string>();
+
+	cards = ["NaCl", "MgCl"];
+
+	cards = shuffleArray(cards);
+
+	
 }
 
 function shuffleArray(array: any[]) {

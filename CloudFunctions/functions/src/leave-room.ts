@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const leaveRoom1 = functions.https.onCall(async (data, context) => { //NOT TESTED
+export const leaveRoom1 = functions.region("europe-west1").https.onCall(async (data, context) => { //NOT TESTED
 	const roomId = data.roomId.toString();
 	const roomRef = await admin.firestore().collection("rooms").doc(roomId);
 	const roomDataRef = await admin.firestore().collection("roomsData").doc(roomId);

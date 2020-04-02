@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const sendTeamGameInvitation1 = functions.https.onCall(async (data, context) => {
+export const sendTeamGameInvitation1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const senderName = data.senderName;
 	const senderId = data.senderId;
 	const friendId = data.friendId;

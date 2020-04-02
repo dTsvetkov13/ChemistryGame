@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const updateUser1 = functions.https.onCall(async (data, context) => {
+export const updateUser1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const id = data.id ? data.id : null;
 	const username = data.username ? data.username.toString() : null;
 	const singleGameWins = (data.singleGameWins || data.singleGameWins === 0) ? data.singleGameWins : null;

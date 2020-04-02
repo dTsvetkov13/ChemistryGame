@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const getAllFriends1 = functions.https.onCall(async (data, context) => {
+export const getAllFriends1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const userId = data.userId;
 
 	let result = new Array<{username: string, singleGameWins: string, teamGameWins: string}>();

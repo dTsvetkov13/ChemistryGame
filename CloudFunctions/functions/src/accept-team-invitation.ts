@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-export const acceptTeamInvitation1 = functions.https.onCall(async (data, context) => {
+export const acceptTeamInvitation1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const receiverId = data.receiverId;
 	const receiverToken = (await admin.firestore().collection("tokens").doc(receiverId).get()).get("token");
 	const senderName = data.senderName;

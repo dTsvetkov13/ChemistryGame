@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import {getCardData} from "./utils";
 
-export const getPlayerCards1 = functions.https.onCall(async (data, context) => {
+export const getPlayerCards1 = functions.region("europe-west1").https.onCall(async (data, context) => {
 	const playerId = data.playerId.toString();
 
 	const playerRef = admin.firestore().collection("players").doc(playerId);
