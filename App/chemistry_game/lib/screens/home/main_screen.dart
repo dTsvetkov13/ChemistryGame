@@ -5,7 +5,6 @@ import 'package:chemistry_game/models/profile_data.dart';
 import 'package:chemistry_game/models/remote_config.dart';
 import 'package:chemistry_game/screens/loading_screen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/screens/game_screens/room_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -65,47 +64,47 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  final HttpsCallable callFindRoom = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callFindRoom = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'findRoom',
   );
 
-  final HttpsCallable callGetPlayerCards = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetPlayerCards = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getPlayerCards',
   );
 
-  final HttpsCallable callReadyPlayer = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callReadyPlayer = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'readyPlayer',
   );
 
-  final HttpsCallable callAcceptTeamInvitation = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callAcceptTeamInvitation = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'acceptTeamInvitation',
   );
 
-  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetProfileData = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getProfileData',
   );
 
-  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllFriends = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllFriends',
   );
 
-  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllInvitations = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllInvitations',
   );
 
-  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetTopTen = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getTopTen',
   );
 
-  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callUpdateCurrToken = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'updateCurrToken',
   );
 
-  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callSendTeamGameInvitation = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'sendTeamGameInvitation',
   );
 
-  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetOnlineFriends = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getOnlineFriends',
   );
 

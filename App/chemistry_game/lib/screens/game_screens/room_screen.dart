@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:badges/badges.dart';
 import 'package:chemistry_game/models/card.dart';
 import 'package:chemistry_game/models/compound_card.dart';
 import 'package:chemistry_game/models/fieldPlayer.dart';
@@ -34,9 +35,10 @@ class BuildRoomScreen extends StatefulWidget {
   static String inGameMessages = "";
 
   @override
-  _BuildRoomScreenState createState() => _BuildRoomScreenState(roomId: roomId, playerId: playerId,
-                    lastCardData: lastCardData,
-                    playerName: playerName, player: player, firebaseMessaging: firebaseMessaging, fieldPlayers: this.fieldPlayers);
+  _BuildRoomScreenState createState() =>
+      _BuildRoomScreenState(roomId: roomId, playerId: playerId,
+      lastCardData: lastCardData, playerName: playerName, player: player, firebaseMessaging: firebaseMessaging,
+      fieldPlayers: this.fieldPlayers);
 }
 
 class _BuildRoomScreenState extends State<BuildRoomScreen> {
@@ -76,23 +78,25 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   final GlobalKey _menuKey = new GlobalKey();
 
-  final HttpsCallable callPlaceCard = CloudFunctions.instance.getHttpsCallable(
+  bool unseenElementCards = false;
+
+  final HttpsCallable callPlaceCard = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'placeCard',
   );
 
-  final HttpsCallable callCompleteReaction = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callCompleteReaction = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'completeReaction',
   );
 
-  final HttpsCallable callGetDeckCard = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetDeckCard = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getDeckCard',
   );
 
-  final HttpsCallable callSendChatMsgToEveryone = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callSendChatMsgToEveryone = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'sendChatMsgToEveryone',
   );
 
-  final HttpsCallable callAddLeftPlayer = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callAddLeftPlayer = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'addLeftPlayer',
   );
 
@@ -920,7 +924,14 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           Container(
             height: height * 0.3,
             child: RaisedButton(
-              child: Text("Elements"),
+              child: Badge(
+                badgeContent: Text('3'),
+                child: Container(
+                  child: Text(
+                      "Elements"
+                  ),
+                ),
+              ),
               onPressed: () {
                 setState(() {
                   buildMenuShowingCardsType.value = BuildMenuShowingCardsType.ElementCards;

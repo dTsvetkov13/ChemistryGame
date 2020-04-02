@@ -1,12 +1,17 @@
 import 'dart:async';
-
-
+import 'package:chemistry_game/models/element_card.dart';
+import 'package:chemistry_game/models/reaction.dart';
+import 'package:chemistry_game/models/remote_config.dart';
+import 'package:chemistry_game/screens/game_screens/room_screen.dart';
+import 'package:chemistry_game/theme/colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
-import 'package:chemistry_game/constants/text_styling.dart';
-import 'package:chemistry_game/models/element_card.dart';
-import 'package:nice_button/NiceButton.dart';
+import 'package:uuid/uuid.dart';
+import 'package:confetti/confetti.dart';
+import 'dart:math';
+import 'package:badges/badges.dart';
 
 class ProfileScreen extends StatefulWidget {
   final userId;
@@ -18,7 +23,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-
   var userId;
   _ProfileScreenState({this.userId});
 
@@ -28,16 +32,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
 
-  final HttpsCallable callGetProfileData = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetProfileData = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getProfileData',
+  );
+
+  final HttpsCallable callTest = CloudFunctions(region: "europe-west1").getHttpsCallable(
+    functionName: 'testFunction1',
   );
 
   var userToken;
   FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
+  ConfettiController _controllerCenterLeft;
+  ConfettiController _controllerCenterRight;
+
   @override
+  void dispose() {
+    _controllerCenterRight.dispose();
+    _controllerCenterLeft.dispose();
+    super.dispose();
+  }
+
+  @override
+  // ignore: missing_return
   Future<void> initState() {
     super.initState();
+    _controllerCenterRight =
+        ConfettiController(duration: Duration(seconds: 10));
+    _controllerCenterLeft = ConfettiController(duration: Duration(seconds: 10));
     _firebaseMessaging.configure(
       onMessage: (Map<String, dynamic> message) {
         var title = message["notification"]["title"];
@@ -57,12 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _firebaseMessaging.getToken().then((token) async {
       userToken = token;
       print("Token : $userToken");
-
-      var data = {
-        "userToken": userToken,
-        "userId": userId
-      };
-//      await callGetProfileData(data);
     });
   }
 
@@ -100,58 +116,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    return ValueListenableBuilder(
-      child: Container(
-        child: drawProfileData(userName.value, singleGameWins, teamGameWins)),
-      valueListenable: userName,
-      builder: (BuildContext context, String value , Widget child) {
-        return drawProfileData(userName.value, singleGameWins, teamGameWins);
-      },
+    MaterialApp(
+      title: "Test Theme",
+      theme: ThemeData(
+        primaryColor: Colors.lightGreenAccent,
+        accentColor: Colors.cyan,
+      )
     );
-      /*Column(
-        children: <Widget>[
-          RaisedButton(
-            onPressed: () {
-              startTimer();
-            },
-            child: Text("start"),
-          ),
-          Text("$_start"),
-          RaisedButton(
-            child: Text("add"),
-            onPressed: () async {
-              var data = {
-                "name": "Cl",
-                "uuid": "sasasa"
-              };
 
-              await callAddValue.call(data);
-            },
-          ),
-          RaisedButton(
-            child: Text("delete"),
-            onPressed: () async {
-              var data = {
-                "name": "Cl",
-                "uuid": "sasasa"
-              };
+    Widget drawRightSideAddCardButton(double width, double height) {
+      return Container(
+        width: width,
+        height: height,
 
-              await callDeleteValue.call(data);
-            },
-          ),
-          RaisedButton(
-            child: Text("get"),
-            onPressed: () async {
-              var data = {
-                "name": "Cl",
-                "uuid": "ss"
-              };
+        child: RaisedButton(
+          color: Colors.white,
+          child: Icon(Icons.add),
+          onPressed: () {
+            var fu = CloudFunctions(region: "europe-west1").getHttpsCallable(
+              functionName: "getProfileData",
+            );
+            //print("Width: " + width.toString() + ", height: " + height.toString());
+//            exists.value = true;
+//            var newId = new Uuid();
+//            rightSideCards[newId] = null;
+//            updated.value = !updated.value;
+          },
+        ),
+      );
+    }
 
-              await callGetValue.call(data);
-            },
-          )
-        ],
-      ),
-    );*/
+    double width = 100;
+    double height = 100;
+
+    return Column(
+
+      children: <Widget>[
+        Badge(
+          badgeContent: Text('3'),
+          child: Container(
+            child: Text(
+                "dsdsd"
+            ),
+          ),
+        )
+      ],
+
+    );
   }
 }

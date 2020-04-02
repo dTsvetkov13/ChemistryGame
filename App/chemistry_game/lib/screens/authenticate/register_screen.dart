@@ -1,7 +1,4 @@
-import "package:cloud_firestore/cloud_firestore.dart";
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' as prefix0;
-import 'package:chemistry_game/models/User.dart';
 import 'package:chemistry_game/services/auth.dart';
 import 'package:chemistry_game/services/database.dart';
 
@@ -151,7 +148,7 @@ class RegisterForm extends State<RegisterScreen> {
                             });
                           } else {
                             print(result.uid);
-                            DatabaseService(result.uid).configureUser(username);
+                            DatabaseService(result.uid).configureUser(username, email);
                             Navigator.pop(context);
                           }
 

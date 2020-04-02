@@ -11,7 +11,7 @@ class DatabaseService {
 
   Future<void> configureUser(String username, String email) async {
 
-    final HttpsCallable updateUser = CloudFunctions.instance.getHttpsCallable(
+    final HttpsCallable updateUser = CloudFunctions(region: "europe-west1").getHttpsCallable(
       functionName: 'updateUser',
     );
 

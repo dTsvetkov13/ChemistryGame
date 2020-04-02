@@ -21,23 +21,23 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   _FriendsScreenState({this.userId});
 
-  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllFriends = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllFriends',
   );
 
-  final HttpsCallable callAddFriend = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callAddFriend = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'addFriend',
   );
 
-  final HttpsCallable callAcceptInvitation = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callAcceptInvitation = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'acceptInvitation',
   );
 
-  final HttpsCallable callDeclineInvitation = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callDeclineInvitation = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'declineInvitation',
   );
 
-  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllInvitations = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllInvitations',
   );
 

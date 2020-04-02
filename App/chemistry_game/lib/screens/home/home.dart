@@ -32,27 +32,27 @@ class HomeScreenState extends State<HomeScreen> {
   var singleGameWins = "";
   var teamGameWins = "";
 
-  final HttpsCallable callGetAllFriends = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllFriends = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllFriends',
   );
 
-  final HttpsCallable callGetAllInvitations = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetAllInvitations = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getAllInvitations',
   );
 
-  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetTopTen = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getTopTen',
   );
 
-  final HttpsCallable callUpdateCurrToken = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callUpdateCurrToken = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'updateCurrToken',
   );
 
-  final HttpsCallable callSendTeamGameInvitation = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callSendTeamGameInvitation = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'sendTeamGameInvitation',
   );
 
-  final HttpsCallable callGetOnlineFriends = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetOnlineFriends = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getOnlineFriends',
   );
 

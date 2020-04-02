@@ -11,7 +11,7 @@ class RankingScreen extends StatefulWidget {
 
 class _RankingScreenState extends State<RankingScreen> {
 
-  final HttpsCallable callGetTopTen = CloudFunctions.instance.getHttpsCallable(
+  final HttpsCallable callGetTopTen = CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'getTopTen',
   );
 
