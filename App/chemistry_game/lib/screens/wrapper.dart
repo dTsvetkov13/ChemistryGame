@@ -18,13 +18,13 @@ class _WrapperState extends State<Wrapper> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    remoteConfigInit();
+    Config().getAllData();
   }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: gotData,
+      valueListenable: Config().gotData,
       child: Container(),
       builder: (BuildContext context, bool value, Widget chikd) {
         if(value) {
