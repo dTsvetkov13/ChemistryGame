@@ -5,41 +5,34 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:chemistry_game/screens/home/main_screen.dart';
 
-RemoteConfig remoteConfig;
-ValueNotifier<bool> gotData = new ValueNotifier(false);
+class Config {
+  RemoteConfig remoteConfig;
+  ValueNotifier<bool> gotData = new ValueNotifier(false);
+  static final Config _instance = Config._privateConstructor();
+  Map<String, String> strings = new Map<String, String>();
 
-void remoteConfigInit() async {
-  remoteConfig = await RemoteConfig.instance;
-  remoteConfig.setConfigSettings(RemoteConfigSettings(debugMode: false));
+  Config._privateConstructor();
 
-  await remoteConfig.notifyListeners();
-  await remoteConfig.fetch(expiration: const Duration(seconds: 0));
-  await remoteConfig.activateFetched();
+  factory Config() {
+    return _instance;
+  }
 
-  gotData.value = true;
-}
+  void getAllData() async {
+    remoteConfig = await RemoteConfig.instance;
+    remoteConfig.setConfigSettings(RemoteConfigSettings(debugMode: false));
 
-void getMainScreenData() async {
-  MainScreen.singleModeText = remoteConfig.getString("singleModeText");
-  MainScreen.teamModeText = remoteConfig.getString("teamModeText");
-  MainScreen.playButtonText = remoteConfig.getString("playButtonText");
-  MainScreen.inviteMsg = remoteConfig.getString("inviteMsg");
-  MainScreen.receiveMsg = remoteConfig.getString("receiveMsg");
-}
+    await remoteConfig.notifyListeners();
+    await remoteConfig.fetch(expiration: const Duration(seconds: 0));
+    await remoteConfig.activateFetched();
 
-void getRoomScreenData() async {
-  BuildRoomScreen.inGameMessages = remoteConfig.getString("inGameMessages");
-}
+    gotData.value = true;
 
-void getColors() async {
+    remoteConfig.getAll().forEach((key, value) => {
+      strings[key] = value.asString()
+    });
+  }
 
-}
-
-void getAuthenticateData() async {
-  AuthenticateState.mainLoginButtonText = remoteConfig.getString("mainLoginButtonText");
-  AuthenticateState.secondaryLoginButtonText = remoteConfig.getString("secondaryLoginButtonText");
-  AuthenticateState.mainRegisterButtonText = remoteConfig.getString("mainRegisterButtonText");
-  AuthenticateState.secondaryRegisterButtonText = remoteConfig.getString("secondaryRegisterButtonText");
-  AuthenticateState.informationButtonText = remoteConfig.getString("informationButtonText");
-  AuthenticateState.informationText = remoteConfig.getString("informationText");
+  String getString(String key) {
+    return strings[key];
+  }
 }

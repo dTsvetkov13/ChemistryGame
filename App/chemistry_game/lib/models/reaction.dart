@@ -1,5 +1,4 @@
 import 'package:chemistry_game/models/card.dart';
-import 'package:chemistry_game/models/element_card.dart';
 import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -177,7 +176,8 @@ class Reaction {
                   exists.value = false;
                 }
 
-                card.usedInReaction = false;
+
+                if(card != null ) card.usedInReaction = false;
 
                 updated.value = !updated.value;
               },
@@ -268,12 +268,4 @@ class Reaction {
 
     updated.value = !updated.value;
   }
-}
-
-enum ReactionType {
-  Combination,
-  Decomposition,
-  DisplacementReaction,
-  DoubleDisplacementReaction,
-  CombustionReaction
 }

@@ -2,11 +2,12 @@ import 'package:chemistry_game/models/compound_card.dart';
 import 'package:chemistry_game/models/element_card.dart';
 import 'package:quiver/collection.dart';
 
-class Player{
-
+class Player
+{
   String name;
   String id;
   final points = 0;
+  String token;
   Multimap<String, ElementCard> elementCards = new Multimap<String, ElementCard>();
   List<CompoundCard> compoundCards = new List<CompoundCard>();
   bool finishedCards = false;
