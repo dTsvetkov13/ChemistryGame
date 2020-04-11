@@ -28,7 +28,7 @@ class HomeScreenState extends State<HomeScreen> {
   var userToken;
   FirebaseMessaging _firebaseMessaging = new FirebaseMessaging();
 
-  static var username = "";
+  var username = "";
   var singleGameWins = "";
   var teamGameWins = "";
 
@@ -60,7 +60,6 @@ class HomeScreenState extends State<HomeScreen> {
   // ignore: missing_return
   Future<void> initState() {
     super.initState();
-    print("HOME INIT");
     _firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) {
           var title = message["notification"]["title"];
@@ -130,7 +129,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     List<Widget> _widgetOptions = <Widget>[
       MainScreen(userId: user.uid),
-      ProfileScreen(userId: user.uid),
+      //ProfileScreen(userId: user.uid),
       FriendsScreen(userId: user.uid,),
       RankingScreen()
     ];
@@ -194,15 +193,15 @@ class HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(context);
                 },
               ),
-              ListTile(
-                title: Text('Profile'),
-                onTap: () {
-                  setState(() {
-                    _selectedIndex = 1;
-                  });
-                  Navigator.pop(context);
-                },
-              ),
+//              ListTile(
+//                title: Text('Profile'),
+//                onTap: () {
+//                  setState(() {
+//                    _selectedIndex = 1;
+//                  });
+//                  Navigator.pop(context);
+//                },
+//              ),
               ListTile(
                 title: Row(
                   children: <Widget>[
@@ -214,7 +213,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 2;
+                    _selectedIndex = 1;
                   });
                   Navigator.pop(context);
                 },
@@ -230,7 +229,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () {
                   setState(() {
-                    _selectedIndex = 3;
+                    _selectedIndex = 2;
                   });
                   Navigator.pop(context);
                 },
