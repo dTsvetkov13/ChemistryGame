@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:badges/badges.dart';
+import 'package:chemistry_game/classes/build_menu.dart';
+import 'package:chemistry_game/classes/utils.dart';
 import 'package:chemistry_game/models/card.dart';
 import 'package:chemistry_game/models/compound_card.dart';
 import 'package:chemistry_game/models/enums.dart';
-import 'package:chemistry_game/models/reaction.dart';
 import 'package:chemistry_game/models/room.dart';
 import 'package:chemistry_game/screens/game_screens/summary_screen.dart';
 import 'package:chemistry_game/screens/home/home.dart';
@@ -16,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
 import 'package:chemistry_game/models/element_card.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nice_button/nice_button.dart';
 import 'package:chemistry_game/models/remote_config.dart';
 
@@ -38,46 +37,25 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
   Room room;
   FirebaseMessaging firebaseMessaging;
+  BuildMenu buildMenu = new BuildMenu();
 
   ValueNotifier<int> listViewStartingIndex = ValueNotifier<int>(0);
-  ValueNotifier<BuildMenuShowingCardsType> buildMenuShowingCardsType =
-      new ValueNotifier<BuildMenuShowingCardsType>(
-          BuildMenuShowingCardsType.ElementCards);
 
-  ValueNotifier<int> elementCardsInBuildMenuStartingIndex =
-      new ValueNotifier<int>(0);
-  ValueNotifier<int> compoundCardsInBuildMenuStartingIndex =
-      new ValueNotifier<int>(0);
-  ValueNotifier<bool> updatedUnseenCards = new ValueNotifier<bool>(false);
-
-  int shownElementCardsInBuildMenu = 8;
-  int shownCompoundCardsInBuildMenu = 8;
   var points = new ValueNotifier<int>(0);
 
-  bool showElementCards = true;
   bool calledFunction = false;
-
-  Reaction currReaction = new Reaction();
 
   List<String> textMessages = Config().getString("inGameMessages").split(",");
   List<PopupMenuItem> textMessagesWidgets = new List<PopupMenuItem>();
 
-  bool completeReactionCalled = false;
   String chatMsgSender = "";
   var chatMsg = new ValueNotifier("");
 
   final GlobalKey _menuKey = new GlobalKey();
 
-  bool unseenElementCards = false;
-
   final HttpsCallable callPlaceCard =
       CloudFunctions(region: "europe-west1").getHttpsCallable(
     functionName: 'placeCard',
-  );
-
-  final HttpsCallable callCompleteReaction =
-      CloudFunctions(region: "europe-west1").getHttpsCallable(
-    functionName: 'completeReaction',
   );
 
   final HttpsCallable callGetDeckCard =
@@ -253,9 +231,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           break;
         case ("Complete Reaction Failed"):
           toastMsg = message["notification"]["body"];
-          currReaction.clear();
+          buildMenu.currReaction.clear();
           showToast(toastMsg);
-          completeReactionCalled = false;
+          buildMenu.completeReactionCalled = false;
           break;
         case ("Cannot Place Card"):
           toastMsg = message["notification"]["body"];
@@ -272,7 +250,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             listViewStartingIndex = listViewStartingIndex;
           });
 
-          updatedUnseenCards.value = !updatedUnseenCards.value;
+          buildMenu.updatedUnseenCards.value =
+              !buildMenu.updatedUnseenCards.value;
           break;
         case ("You Finished"):
           toastMsg = message["notification"]["body"];
@@ -293,15 +272,15 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
           break;
         case ("Empty Side"):
           toastMsg = message["notification"]["body"];
-          currReaction.clear();
-          completeReactionCalled = false;
+          buildMenu.currReaction.clear();
+          buildMenu.completeReactionCalled = false;
           showToast(toastMsg);
           break;
         case ("Complete Reaction Successed"):
           toastMsg = message["notification"]["body"];
           var cardToAdd = "";
 
-          currReaction.leftSideCards.values.forEach((card) {
+          buildMenu.currReaction.leftSideCards.values.forEach((card) {
             if (card is ElementCard) {
               room.player.removeElementCard(card.name, card);
             } else {
@@ -309,7 +288,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             }
           });
 
-          currReaction.rightSideCards.values.forEach((card) {
+          buildMenu.currReaction.rightSideCards.values.forEach((card) {
             if (card is ElementCard) {
               room.player.removeElementCard(card.name, card);
             } else {
@@ -317,26 +296,22 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             }
           });
 
-          currReaction.clear();
+          buildMenu.currReaction.clear();
 
           showToast(toastMsg);
 
-          setState(() {
-            if (buildMenuShowingCardsType.value ==
-                BuildMenuShowingCardsType.ElementCards) {
-              buildMenuShowingCardsType.value =
-                  BuildMenuShowingCardsType.CompoundCards;
-            } else {
-              buildMenuShowingCardsType.value =
-                  BuildMenuShowingCardsType.ElementCards;
-            }
-          });
-          setState(() {
-            listViewStartingIndex = listViewStartingIndex;
-          });
+          if (buildMenu.buildMenuShowingCardsType.value ==
+              BuildMenuShowingCardsType.ElementCards) {
+            buildMenu.buildMenuShowingCardsType.value =
+                BuildMenuShowingCardsType.CompoundCards;
+          } else {
+            buildMenu.buildMenuShowingCardsType.value =
+                BuildMenuShowingCardsType.ElementCards;
+          }
+
+          listViewStartingIndex = listViewStartingIndex;
 
           if (message["data"].containsKey("cardToAdd")) {
-            print("Card to add");
             cardToAdd = message["data"]["cardToAdd"];
 
             if (cardToAdd.contains(",")) {
@@ -345,13 +320,14 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
             } else {
               room.player.addCompoundCard(CompoundCard.fromString(cardToAdd));
             }
-            updatedUnseenCards.value = !updatedUnseenCards.value;
+            buildMenu.updatedUnseenCards.value =
+                !buildMenu.updatedUnseenCards.value;
           }
-          setState(() {
-            buildMenuShowingCardsType = buildMenuShowingCardsType;
-          });
 
-          completeReactionCalled = false;
+          buildMenu.buildMenuShowingCardsType =
+              buildMenu.buildMenuShowingCardsType;
+
+          buildMenu.completeReactionCalled = false;
 
           break;
       }
@@ -361,22 +337,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     firebaseMessaging.getToken().then((token) {
       playerToken = token;
     });
-  }
-
-  void showToast(var toastMsg) {
-    Fluttertoast.showToast(
-        msg: toastMsg.toString(),
-        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
-        gravity: ToastGravity.BOTTOM,
-        toastLength: Toast.LENGTH_SHORT);
-  }
-
-  void showTopToast(var toastMsg) {
-    Fluttertoast.showToast(
-        msg: toastMsg.toString(),
-        timeInSecForIos: 10, //TODO: set it back to 1/2 sec
-        gravity: ToastGravity.TOP,
-        toastLength: Toast.LENGTH_SHORT);
   }
 
   @override
@@ -572,9 +532,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                         borderRadius: BorderRadius.circular(10.0)),
                     child: Icon(Icons.arrow_back, color: primaryGreen),
                     onPressed: () {
-                      setState(() {
-                        listViewStartingIndex.value -= 6;
-                      });
+                      listViewStartingIndex.value -= 6;
                     },
                   );
                 } else {
@@ -586,11 +544,9 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                     borderRadius: BorderRadius.circular(10.0)),
                 child: Icon(Icons.arrow_back, color: primaryGreen),
                 onPressed: () {
-                  setState(() {
-                    if (!(listViewStartingIndex.value - 6 < 0)) {
-                      listViewStartingIndex.value -= 6;
-                    }
-                  });
+                  if (!(listViewStartingIndex.value - 6 < 0)) {
+                    listViewStartingIndex.value -= 6;
+                  }
                 },
               ),
             ),
@@ -700,10 +656,12 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                                 width: mediaQueryHeight * 0.0025,
                                 color: Colors.black,
                               )),
-                              child: createBuildMenuContent(
+                              child: buildMenu.createBuildMenuContent(
                                   mediaQueryWidth * 0.8 -
                                       mediaQueryHeight * 0.01,
-                                  mediaQueryHeight * 0.64),
+                                  mediaQueryHeight * 0.64,
+                                  room,
+                                  playerToken),
                             ),
                           );
                         });
@@ -845,377 +803,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
     );
   }
 
-  Widget createBuildMenuContent(double width, double height) {
-    return Container(
-        width: width,
-        height: height,
-        child: Column(
-          children: <Widget>[
-            drawReactionRow(width, height * 0.5, currReaction),
-            drawCardsArea(width, height * 0.5),
-          ],
-        ));
-  }
-
-  Widget drawCardsArea(double width, double height) {
-    return Container(
-      width: width,
-      height: height,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          drawCardTypeButtons(width * 0.2, height),
-          drawCardsAvailable(width * 0.75, height),
-        ],
-      ),
-    );
-  }
-
-  Widget drawCardTypeButtons(double width, double height) {
-    return Container(
-      width: width,
-      height: height,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Container(
-            height: height * 0.3,
-            child: RaisedButton(
-              child: Badge(
-                position: BadgePosition.topRight(top: -12, right: -20),
-                badgeContent: ValueListenableBuilder(
-                  valueListenable: updatedUnseenCards,
-                  builder: (BuildContext context, bool value, Widget widget) {
-                    int unseenElementCards = 0;
-                    room.player.getElementCards().forEach((e) {
-                      if (!e.seen) unseenElementCards++;
-                    });
-                    return unseenElementCards <= 0
-                        ? Container()
-                        : Text(unseenElementCards.toString());
-                  },
-                  child: Text(""),
-                ),
-                child: Container(
-                  child: Text("Elements"),
-                ),
-              ),
-              onPressed: () {
-                setState(() {
-                  buildMenuShowingCardsType.value =
-                      BuildMenuShowingCardsType.ElementCards;
-                  updatedUnseenCards.value = !updatedUnseenCards.value;
-                });
-              },
-            ),
-          ),
-          Container(
-            height: height * 0.3,
-            child: RaisedButton(
-              child: Badge(
-                  badgeContent: ValueListenableBuilder(
-                      valueListenable: updatedUnseenCards,
-                      builder:
-                          (BuildContext context, bool value, Widget widget) {
-                        int unseenCompoundCards = 0;
-                        room.player.compoundCards.forEach((c) {
-                          if (!c.seen) unseenCompoundCards++;
-                        });
-                        return unseenCompoundCards <= 0
-                            ? Container()
-                            : Text(unseenCompoundCards.toString());
-                      },
-                      child: Text("")),
-                  position: BadgePosition.topRight(top: -12, right: -20),
-                  child: Text("Compounds")),
-              onPressed: () {
-                buildMenuShowingCardsType.value =
-                    BuildMenuShowingCardsType.CompoundCards;
-                updatedUnseenCards.value = !updatedUnseenCards.value;
-              },
-            ),
-          ),
-          Container(
-            height: height * 0.3,
-            child: RaisedButton(
-              child: Text("Accelerations"),
-              onPressed: () {
-                showToast("We work on Accelerations");
-                //TODO: set to AccelerationCards
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget drawCardsAvailable(double width, double height) {
-    return Container(
-      width: width,
-      height: height,
-      child: ValueListenableBuilder(
-        builder: (BuildContext context, BuildMenuShowingCardsType value,
-            Widget child) {
-          List<Widget> cards = new List<Widget>();
-
-          switch (buildMenuShowingCardsType.value) {
-            case (BuildMenuShowingCardsType.ElementCards):
-              return Row(
-                children: <Widget>[
-                  drawBuildMenuLeftArrow(
-                      buildMenuShowingCardsType.value, width * 0.1),
-                  ValueListenableBuilder(
-                    valueListenable: elementCardsInBuildMenuStartingIndex,
-                    builder: (BuildContext context, int value, Widget child) {
-                      return ValueListenableBuilder(
-                        valueListenable: currReaction.updated,
-                        builder:
-                            (BuildContext context, bool value2, Widget child) {
-                          cards.clear();
-
-                          room.player.getElementCards().forEach((card) => {
-                                !card.usedInReaction
-                                    ? cards.add(card.drawDraggableCard(
-                                        width * 0.1, height))
-                                    : null
-                              });
-
-                          int endIndex = ((elementCardsInBuildMenuStartingIndex
-                                          .value +
-                                      shownElementCardsInBuildMenu) <=
-                                  cards.length
-                              //room.player.getElementCards().length
-                              ? elementCardsInBuildMenuStartingIndex.value +
-                                  shownElementCardsInBuildMenu
-                              : cards
-                                  .length); //room.player.getElementCards().length);
-
-                          var temp = room.player.getElementCards();
-
-                          for (int i = value; i < endIndex; i++) {
-                            room.player.setCardToSeen(
-                                temp.elementAt(i).uuid, temp.elementAt(i).name);
-                          }
-
-                          return Row(
-                            children: cards.length > 0
-                                ? cards.sublist(
-                                    elementCardsInBuildMenuStartingIndex.value,
-                                    endIndex)
-                                : cards,
-                          );
-                        },
-                        child: Text(""),
-                      );
-                    },
-                    child: Container(),
-                  ),
-                  drawBuildMenuRightArrow(
-                      buildMenuShowingCardsType.value, width * 0.1),
-                ],
-              );
-
-              break;
-            case (BuildMenuShowingCardsType.CompoundCards):
-              room.player.compoundCards.forEach((card) => !card.usedInReaction
-                  ? cards.add(card.drawDraggable(width * 0.1, height))
-                  : null);
-
-              return Row(
-                children: <Widget>[
-                  drawBuildMenuLeftArrow(
-                      buildMenuShowingCardsType.value, width * 0.1),
-                  ValueListenableBuilder(
-                    valueListenable: compoundCardsInBuildMenuStartingIndex,
-                    builder: (BuildContext context, int value, Widget child) {
-                      cards.clear();
-
-                      room.player.compoundCards.forEach((card) => {
-                            !card.usedInReaction
-                                ? cards.add(
-                                    card.drawDraggable(width * 0.1, height))
-                                : null
-                          });
-
-                      int endIndex =
-                          ((compoundCardsInBuildMenuStartingIndex.value +
-                                      shownCompoundCardsInBuildMenu) <=
-                                  cards.length
-                              ? compoundCardsInBuildMenuStartingIndex.value +
-                                  shownCompoundCardsInBuildMenu
-                              : cards.length);
-
-                      var temp = room.player.compoundCards;
-
-                      for (int i = value; i < endIndex; i++) {
-                        room.player.setCardToSeen(
-                            temp.elementAt(i).uuid, temp.elementAt(i).name);
-                      }
-
-                      return Row(
-                        children: cards.length > 0
-                            ? cards.sublist(
-                                compoundCardsInBuildMenuStartingIndex.value,
-                                endIndex)
-                            : cards,
-                      );
-                    },
-                    child: Container(),
-                  ),
-                  drawBuildMenuRightArrow(
-                      buildMenuShowingCardsType.value, width * 0.1),
-                ],
-              );
-
-              break;
-            /*case (BuildMenuShowingCardsType.AccelerationCards):
-            break;*/
-            default:
-              {
-                print("Error, invalid type");
-                return Container();
-              }
-          }
-        },
-        child: Container(
-          width: width,
-          height: height,
-          color: Colors.red,
-        ),
-        valueListenable: buildMenuShowingCardsType,
-      ),
-    );
-  }
-
-  Widget drawBuildMenuLeftArrow(
-      BuildMenuShowingCardsType buildMenuShowingCardsType, double width) {
-    switch (buildMenuShowingCardsType) {
-      case (BuildMenuShowingCardsType.ElementCards):
-        return ValueListenableBuilder(
-          valueListenable: elementCardsInBuildMenuStartingIndex,
-          builder: (BuildContext context, int value, Widget child) {
-            if (value - shownElementCardsInBuildMenu >= 0) {
-              return Container(
-                width: width,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: primaryGreen),
-                  onPressed: () {
-                    setState(() {
-                      elementCardsInBuildMenuStartingIndex.value -=
-                          shownElementCardsInBuildMenu;
-                    });
-                  },
-                ),
-              );
-            } else {
-              return Container(
-                width: 0,
-                height: 0,
-              );
-            }
-          },
-          child: Container(),
-        );
-        break;
-      case (BuildMenuShowingCardsType.CompoundCards):
-        return ValueListenableBuilder(
-          valueListenable: compoundCardsInBuildMenuStartingIndex,
-          builder: (BuildContext context, int value, Widget child) {
-            if (value - shownCompoundCardsInBuildMenu >= 0) {
-              return Container(
-                width: width,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: primaryGreen),
-                  onPressed: () {
-                    setState(() {
-                      compoundCardsInBuildMenuStartingIndex.value -=
-                          shownCompoundCardsInBuildMenu;
-                    });
-                  },
-                ),
-              );
-            } else {
-              return Container(
-                width: 0,
-                height: 0,
-              );
-            }
-          },
-          child: Container(),
-        );
-        break;
-      default:
-        return Container();
-    }
-  }
-
-  Widget drawBuildMenuRightArrow(
-      BuildMenuShowingCardsType buildMenuShowingCardsType, double width) {
-    switch (buildMenuShowingCardsType) {
-      case (BuildMenuShowingCardsType.ElementCards):
-        return ValueListenableBuilder(
-          valueListenable: elementCardsInBuildMenuStartingIndex,
-          builder: (BuildContext context, int value, Widget child) {
-            int usedCards = 0;
-            room.player.getElementCards().forEach((card) => {usedCards++});
-
-            if (value + shownElementCardsInBuildMenu < usedCards) {
-              return Container(
-                width: width,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_forward, color: primaryGreen),
-                  onPressed: () {
-                    setState(() {
-                      elementCardsInBuildMenuStartingIndex.value +=
-                          shownElementCardsInBuildMenu;
-                    });
-                  },
-                ),
-              );
-            } else {
-              return Container(
-                width: 0,
-                height: 0,
-              );
-            }
-          },
-          child: Container(),
-        );
-        break;
-      case (BuildMenuShowingCardsType.CompoundCards):
-        return ValueListenableBuilder(
-          valueListenable: compoundCardsInBuildMenuStartingIndex,
-          builder: (BuildContext context, int value, Widget child) {
-            if (value + shownCompoundCardsInBuildMenu <
-                room.player.compoundCards.length) {
-              return Container(
-                width: width,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_forward, color: primaryGreen),
-                  onPressed: () {
-                    setState(() {
-                      compoundCardsInBuildMenuStartingIndex.value +=
-                          shownCompoundCardsInBuildMenu;
-                    });
-                  },
-                ),
-              );
-            } else {
-              return Container(
-                width: 0,
-                height: 0,
-              );
-            }
-          },
-          child: Container(),
-        );
-        break;
-      default:
-        return Container();
-    }
-  }
-
   Widget leaveButton(double width, double height) {
     return Container(
       width: width,
@@ -1242,110 +829,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
         leaveButton(width, height * 0.4),
       ],
     ));
-  }
-
-  Widget drawReactionRow(double width, double height, Reaction reaction) {
-    return Container(
-      width: width,
-      height: height,
-      child: Row(children: <Widget>[
-        Expanded(
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: <Widget>[
-              drawCompleteButton(width, height),
-              reaction.draw(width * 0.8, height),
-            ],
-          ),
-        ),
-        drawDeleteButton(width * 0.1, height * 0.7, reaction)
-      ]),
-    );
-  }
-
-  Widget drawCompleteButton(double width, double height) {
-    return ValueListenableBuilder(
-      valueListenable: currReaction.exists,
-      builder: (BuildContext context, bool value, Widget child) {
-        if (value) {
-          return child;
-        } else {
-          return Container(
-            width: 0,
-            height: 0,
-          );
-        }
-      },
-      child: IconButton(
-        icon: Icon(Icons.check),
-        color: Colors.green,
-        onPressed: () async {
-          if (room.player.finishedCards) {
-            showToast("You have already finished");
-            return;
-          }
-
-          if (completeReactionCalled) {
-            showToast("Wait until the check is complete!");
-            return;
-          } else {
-            completeReactionCalled = true;
-          }
-
-          List<Map<String, String>> leftCards = new List<Map<String, String>>();
-          List<Map<String, String>> rightCards =
-              new List<Map<String, String>>();
-
-          currReaction.leftSideCards.values.forEach((card) {
-            if (card != null) {
-              leftCards.add({"name": card.name, "uuid": card.uuid});
-            }
-          });
-
-          currReaction.rightSideCards.values.forEach((card) {
-            if (card != null) {
-              rightCards.add({"name": card.name, "uuid": card.uuid});
-            }
-          });
-
-          var dataToSend = {
-            "playerId": room.player.id,
-            "playerToken": playerToken,
-            "leftSideCards": leftCards,
-            "rightSideCards": rightCards
-          };
-          showToast("wait...");
-          await callCompleteReaction(dataToSend);
-        },
-      ),
-    );
-  }
-
-  Widget drawDeleteButton(double width, double height, Reaction reaction) {
-    return Container(
-      width: width,
-      height: height,
-      child: ValueListenableBuilder(
-        valueListenable: currReaction.exists,
-        builder: (BuildContext context, bool value, Widget child) {
-          if (value) {
-            return child;
-          } else {
-            return Container(
-              width: 0,
-              height: 0,
-            );
-          }
-        },
-        child: IconButton(
-          icon: Icon(Icons.delete_forever),
-          color: Colors.red,
-          onPressed: () {
-            reaction.clear();
-          },
-        ),
-      ),
-    );
   }
 
   Widget drawLastCardDragTarget(double width, double height) {
