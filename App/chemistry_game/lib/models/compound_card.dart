@@ -16,9 +16,9 @@ class CompoundCard extends card{
     return Container(
       width: width * 0.97,
       height: height * 0.97,
-      child: Center(child: Text(name)),
+      child: Center(child: Text(name, style: TextStyle(fontWeight: FontWeight.bold))),
       decoration: BoxDecoration(
-        border: Border.all(width: width * 0.03),
+        border: Border.all(width: width * 0.01),
         color: usedInReaction ? secondaryYellow : Colors.white,
       ),
     );
@@ -29,7 +29,7 @@ class CompoundCard extends card{
         width: width * 0.97,
         height: height * 0.97,
         decoration: BoxDecoration(
-            border: Border.all(width: width * 0.03)
+            border: Border.all(width: width * 0.01)
         ),
         child: Draggable<card>(
           data: this,

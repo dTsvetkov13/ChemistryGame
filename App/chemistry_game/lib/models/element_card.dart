@@ -2,7 +2,7 @@ import 'package:chemistry_game/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:chemistry_game/models/card.dart';
 
-class ElementCard extends card{
+class ElementCard extends card {
   String name;
   String group;
   int period;
@@ -12,14 +12,14 @@ class ElementCard extends card{
     List<String> diatomicElements = new List<String>();
     diatomicElements = ["H", "O", "N", "I", "F", "Cl", "Br"];
 
-    for(int i = 0; i < diatomicElements.length; i++) {
-      if(this.name == diatomicElements[i]) {
+    for (int i = 0; i < diatomicElements.length; i++) {
+      if (this.name == diatomicElements[i]) {
         isDiatomic = true;
       }
     }
   }
 
-  ElementCard.fromString(String data){
+  ElementCard.fromString(String data) {
     var splitted = data.split(",");
     this.uuid = splitted[0];
     this.name = splitted[1];
@@ -29,8 +29,8 @@ class ElementCard extends card{
     List<String> diatomicElements = new List<String>();
     diatomicElements = ["H", "O", "N", "I", "F", "Cl", "Br"];
 
-    for(int i = 0; i < diatomicElements.length; i++) {
-      if(this.name == diatomicElements[i]) {
+    for (int i = 0; i < diatomicElements.length; i++) {
+      if (this.name == diatomicElements[i]) {
         isDiatomic = true;
       }
     }
@@ -40,25 +40,19 @@ class ElementCard extends card{
     return Container(
       height: height,
       width: width,
-
       decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.black,
-            width: width * 0.01
-          ),
-          color: usedInReaction ? secondaryYellow : Colors.white,
+        border: Border.all(color: Colors.black, width: width * 0.01),
+        color: usedInReaction ? secondaryYellow : Colors.white,
       ),
       child: Column(
         children: <Widget>[
-
           //Group
           Container(
             height: height * 0.3,
             width: width,
             child: Text(group),
-            margin: EdgeInsets.only(right: width * 0.1, top: height * 0.05),
+            margin: EdgeInsets.only(right: width * 0.1, top: height * 0.02),
             alignment: Alignment.topRight,
-
           ),
 
           //Name
@@ -67,13 +61,25 @@ class ElementCard extends card{
             width: width,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Text(
                   name,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: height * 0.2),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: height * 0.25),
                 ),
-                isDiatomic ? Text("2") : Container(width: 0, height: 0,)
+                Container(
+                    child: isDiatomic
+                        ? Text("2",
+                            style: TextStyle(
+                                fontSize: height * 0.125,
+                                fontWeight: FontWeight.bold))
+                        : Container(
+                            width: 0,
+                            height: 0,
+                          ),
+                  alignment: Alignment.bottomCenter,
+                )
               ],
             ),
             alignment: Alignment.center,
@@ -95,48 +101,52 @@ class ElementCard extends card{
   Draggable drawDraggableElementCard(double width, double height) {
     return Draggable<ElementCard>(
       data: this,
-      child: this != null ? this.draw(width, height) : Container(
-        width: width,
-        height: height,
-        color: Colors.blueGrey,
-      ),
-      feedback: this != null ? Material(child: this.draw(width, height)) : Container(
-        width: width,
-        height: height,
-        color: Colors.blueGrey,
-      ),
+      child: this != null
+          ? this.draw(width, height)
+          : Container(
+              width: width,
+              height: height,
+              color: Colors.blueGrey,
+            ),
+      feedback: this != null
+          ? Material(child: this.draw(width, height))
+          : Container(
+              width: width,
+              height: height,
+              color: Colors.blueGrey,
+            ),
       childWhenDragging: Container(
         width: width,
         height: height,
         color: Colors.blueGrey,
       ),
-      onDragCompleted: () {
-
-      },
+      onDragCompleted: () {},
     );
   }
 
   Draggable drawDraggableCard(double width, double height) {
     return Draggable<card>(
       data: this,
-      child: this != null ? this.draw(width, height) : Container(
-        width: width,
-        height: height,
-        color: Colors.blueGrey,
-      ),
-      feedback: this != null ? Material(child: this.draw(width, height)) : Container(
-        width: width,
-        height: height,
-        color: Colors.blueGrey,
-      ),
+      child: this != null
+          ? this.draw(width, height)
+          : Container(
+              width: width,
+              height: height,
+              color: Colors.blueGrey,
+            ),
+      feedback: this != null
+          ? Material(child: this.draw(width, height))
+          : Container(
+              width: width,
+              height: height,
+              color: Colors.blueGrey,
+            ),
       childWhenDragging: Container(
         width: width,
         height: height,
         color: Colors.blueGrey,
       ),
-      onDragCompleted: () {
-
-      },
+      onDragCompleted: () {},
     );
   }
 }
