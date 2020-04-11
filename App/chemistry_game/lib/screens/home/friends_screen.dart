@@ -314,9 +314,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
               radius: 52.0,
               background: theme.buttonColor,
               textColor: Colors.black,
-              text: "Invitations",
+              text: "Invite a friend",
               onPressed: () async {
-                drawInvitations(mediaQueryWidth * 0.8, mediaQueryHeight * 0.7);
+                if(username == ProfileData.name) {
+                  showToast("You cannot add yourself as a friend!");
+                  return;
+                }
+                var data = {
+                  "userId": userId,
+                  "friendUsername": username
+                };
+                await callAddFriend.call(data);
+                username = "";
+                showToast("Invitation sent to the user");
               },
             ),
           ),
@@ -384,22 +394,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 radius: 52.0,
                 background: theme.buttonColor,
                 textColor: Colors.black,
-                text: "Invite a friend",
+                text: "Invitations",
                 onPressed: () async {
-                  if(username == ProfileData.name) {
-                    showToast("You cannot add yourself as a friend!");
-                    return;
-                  }
-                  var data = {
-                    "userId": userId,
-                    "friendUsername": username
-                  };
-                  await callAddFriend.call(data);
-                  username = "";
-                  showToast("Invitation sent to the user");
+                  drawInvitations(mediaQueryWidth * 0.8, mediaQueryHeight * 0.7);
                 },
               ),
-            )
+            ),
           ],
         ),
         Container(
