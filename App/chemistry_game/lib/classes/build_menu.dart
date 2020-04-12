@@ -201,10 +201,6 @@ class BuildMenu {
 
               break;
             case (BuildMenuShowingCardsType.CompoundCards):
-              room.player.compoundCards.forEach((card) => !card.usedInReaction
-                  ? cards.add(card.drawDraggable(width * 0.1, height))
-                  : null);
-
               return Row(
                 children: <Widget>[
                   drawBuildMenuLeftArrow(
@@ -212,36 +208,42 @@ class BuildMenu {
                   ValueListenableBuilder(
                     valueListenable: compoundCardsInBuildMenuStartingIndex,
                     builder: (BuildContext context, int value, Widget child) {
-                      cards.clear();
+                      return ValueListenableBuilder(
+                        valueListenable: currReaction.updated,
+                        child: Text(""),
+                        builder: (BuildContext context, bool value2, Widget child) {
+                          cards.clear();
 
-                      room.player.compoundCards.forEach((card) => {
+                          room.player.compoundCards.forEach((card) => {
                             !card.usedInReaction
                                 ? cards.add(
-                                    card.drawDraggable(width / shownCompoundCards, height))
+                                card.drawDraggable(width / shownCompoundCards, height))
                                 : null
                           });
 
-                      int endIndex =
+                          int endIndex =
                           ((compoundCardsInBuildMenuStartingIndex.value +
-                                      shownCompoundCards) <=
-                                  cards.length
+                              shownCompoundCards) <=
+                              cards.length
                               ? compoundCardsInBuildMenuStartingIndex.value +
-                                  shownCompoundCards
+                              shownCompoundCards
                               : cards.length);
 
-                      var temp = room.player.compoundCards;
+                          var temp = room.player.compoundCards;
 
-                      for (int i = value; i < endIndex; i++) {
-                        room.player.setCardToSeen(
-                            temp.elementAt(i).uuid, temp.elementAt(i).name);
-                      }
+                          for (int i = value; i < endIndex; i++) {
+                            room.player.setCardToSeen(
+                                temp.elementAt(i).uuid, temp.elementAt(i).name);
+                          }
 
-                      return Row(
-                        children: cards.length > 0
-                            ? cards.sublist(
+                          return Row(
+                            children: cards.length > 0
+                                ? cards.sublist(
                                 compoundCardsInBuildMenuStartingIndex.value,
                                 endIndex)
-                            : cards,
+                                : cards,
+                          );
+                        }
                       );
                     },
                     child: Container(),
