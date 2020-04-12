@@ -191,7 +191,7 @@ class Reaction {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                Text(card.name),
+                card.getNameAsTextWidget(height * 0.15),
               ],
             )
           ) : drawEmptyCardDragTarget(width, height * 0.77, uuid),//TODO: check the height

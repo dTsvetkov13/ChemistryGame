@@ -59,29 +59,30 @@ class ElementCard extends card {
           Container(
             height: height * 0.3,
             width: width,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  name,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: height * 0.25),
-                ),
-                Container(
-                    child: isDiatomic
-                        ? Text("2",
-                            style: TextStyle(
-                                fontSize: height * 0.125,
-                                fontWeight: FontWeight.bold))
-                        : Container(
-                            width: 0,
-                            height: 0,
-                          ),
-                  alignment: Alignment.bottomCenter,
-                )
-              ],
-            ),
+            child: getNameAsTextWidget(height * 0.25),
+//            child: Row(
+//              mainAxisAlignment: MainAxisAlignment.center,
+//              crossAxisAlignment: CrossAxisAlignment.center,
+//              children: <Widget>[
+//                Text(
+//                  name,
+//                  style: TextStyle(
+//                      fontWeight: FontWeight.bold, fontSize: height * 0.25),
+//                ),
+//                Container(
+//                  child: isDiatomic
+//                      ? Text("2",
+//                          style: TextStyle(
+//                              fontSize: height * 0.125,
+//                              fontWeight: FontWeight.bold))
+//                      : Container(
+//                          width: 0,
+//                          height: 0,
+//                        ),
+//                  alignment: Alignment.bottomCenter,
+//                )
+//              ],
+//            ),
             alignment: Alignment.center,
           ),
 
@@ -148,5 +149,33 @@ class ElementCard extends card {
       ),
       onDragCompleted: () {},
     );
+  }
+
+  @override
+  Row getNameAsTextWidget(double height) {
+    if (isDiatomic) {
+      return Row(
+        children: <Widget>[
+          Text(name, style: TextStyle(fontSize: height)),
+          Container(
+            child: Text("2",
+                style: TextStyle(
+                  fontSize: height / 2,
+                  fontWeight: FontWeight.bold,
+                )),
+            alignment: Alignment.bottomCenter,
+          )
+        ],
+        mainAxisAlignment: MainAxisAlignment.center,
+      );
+    } else {
+      return Row(
+        children: <Widget>[
+          Text(name,
+              style: TextStyle(fontSize: height, fontWeight: FontWeight.bold))
+        ],
+        mainAxisAlignment: MainAxisAlignment.center,
+      );
+    }
   }
 }
