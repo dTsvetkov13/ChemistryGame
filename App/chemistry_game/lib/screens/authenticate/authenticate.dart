@@ -17,11 +17,14 @@ class Authenticate extends StatefulWidget {
 
 class AuthenticateState extends State<Authenticate> {
   String mainLoginButtonText = Config().getString("mainLoginButtonText");
-  String secondaryLoginButtonText = Config().getString("secondaryLoginButtonText");
+  String secondaryLoginButtonText =
+      Config().getString("secondaryLoginButtonText");
   String mainRegisterButtonText = Config().getString("mainRegisterButtonText");
-  String secondaryRegisterButtonText = Config().getString("secondaryRegisterButtonText");
+  String secondaryRegisterButtonText =
+      Config().getString("secondaryRegisterButtonText");
   String informationButtonText = Config().getString("informationButtonText");
   String informationText = Config().getString("informationText");
+  String informationData = Config().getString("informationData");
 
   bool loginAreaFirstChild = true;
   bool registerAreaFirstChild = true;
@@ -93,7 +96,7 @@ class AuthenticateState extends State<Authenticate> {
                         registerStateChangeButton(buttonWidth, buttonHeight),
                         registerArea(width * 0.4, height * 0.35),
                         informationStateChangeButton(buttonWidth, buttonHeight),
-                        //TODO: add informationArea
+                        informationArea(width * 0.4, height * 0.35)
                       ])),
                 ),
               ),
@@ -355,11 +358,6 @@ class AuthenticateState extends State<Authenticate> {
                   );
                 }),
             RaisedButton(
-//              width: width,
-//              elevation: 8.0,
-//              background: Colors.blue,
-//              textColor: Colors.black,
-//              radius: 52.0,
                 child: Text(
                   secondaryRegisterButtonText,
                   textScaleFactor: 1.5,
@@ -373,7 +371,6 @@ class AuthenticateState extends State<Authenticate> {
                       print(result.uid);
                       await DatabaseService(result.uid)
                           .configureUser(username, email);
-//                    await callGetProfileData({"userId": result.uid.toString()});
                       _saving = false;
                       Navigator.pop(context);
                     } catch (error) {
@@ -400,25 +397,38 @@ class AuthenticateState extends State<Authenticate> {
         height: height,
         width: width,
         child: NiceButton(
-            width: width,
-            elevation: 1,
-            radius: 52.0,
-            background: primaryGreen,
-            textColor: Colors.black,
-            text: informationButtonText,
-            onPressed: () {
-              print("Information pressed");
-              //TODO: Change the state of the AnimatedFade
-            }),
+          width: width,
+          elevation: 1,
+          radius: 52.0,
+          background: primaryGreen,
+          textColor: Colors.black,
+          text: informationButtonText,
+          onPressed: () {
+            print("Information pressed");
+            setState(() {
+              informationAreaFirstChild = !informationAreaFirstChild;
+            });
+          }),
       ),
     );
   }
 
   Widget informationArea(double width, double height) {
-    return Container(
-      width: width,
-      height: height,
-      color: Colors.blue,
+    return AnimatedCrossFade(
+      duration: Duration(seconds: 1),
+      firstChild: Container(
+        width: 0,
+        height: 0,
+      ),
+      secondChild: information(),
+      crossFadeState: informationAreaFirstChild
+          ? CrossFadeState.showFirst
+          : CrossFadeState.showSecond,
     );
+  }
+
+  Widget information() {
+    print(informationData);
+    return Text(informationData);
   }
 }
