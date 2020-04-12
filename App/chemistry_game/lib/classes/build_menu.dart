@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 
 final HttpsCallable callCompleteReaction =
 CloudFunctions(region: "europe-west1").getHttpsCallable(
-  functionName: 'completeReaction',
+  functionName: 'completeReactionDemo',
 );
 
 class BuildMenu {
