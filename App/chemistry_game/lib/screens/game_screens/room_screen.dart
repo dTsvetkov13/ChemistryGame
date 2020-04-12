@@ -357,25 +357,24 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
 
     List<Draggable> elementCards = List<Draggable>();
 
-    room.player.getElementCards().forEach((e) => elementCards.add(
+    room.player.getElementCards().forEach((e) => !e.usedInReaction ? elementCards.add(
         e.drawDraggableElementCard(
-            mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)));
+            mediaQueryWidth * 0.1, mediaQueryHeight * 0.2)) : null);
 
-    ListView getElementCards(int startingIndex) {
-      int endIndex = startingIndex + 6 > room.player.getElementCards().length
-          ? room.player.getElementCards().length
-          : startingIndex + 6;
-
+    Row getElementCards(int startingIndex) {
       List<ElementCard> temp = room.player.getElementCards();
+
+      int endIndex = startingIndex + 6 > elementCards.length
+          ? elementCards.length
+          : startingIndex + 6;
 
       for (int i = startingIndex; i < endIndex; i++) {
         room.player
             .setCardToSeen(temp.elementAt(i).uuid, temp.elementAt(i).name);
       }
 
-      return ListView(
-          scrollDirection: Axis.horizontal,
-          children: elementCards.sublist(startingIndex, endIndex));
+      return Row(
+          children: elementCards.length > 0 ? elementCards.sublist(startingIndex, endIndex) : elementCards);
     }
 
     Future<bool> _onWillPop() async {
@@ -651,7 +650,6 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                               width: mediaQueryWidth * 0.8,
                               height: mediaQueryHeight * 0.8,
                               decoration: BoxDecoration(
-                                  //TODO: Make it responsive
                                   border: Border.all(
                                 width: mediaQueryHeight * 0.0025,
                                 color: Colors.black,
@@ -758,17 +756,8 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
               valueListenable: listViewStartingIndex,
               builder: (BuildContext context, int value, Widget child) {
                 if (!(listViewStartingIndex.value + 6 >=
-                    room.player.getElementCards().length)) {
-                  return RawMaterialButton(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0)),
-                    child: Icon(Icons.arrow_forward, color: primaryGreen),
-                    onPressed: () {
-                      setState(() {
-                        listViewStartingIndex.value += 6;
-                      });
-                    },
-                  );
+                    elementCards.length)) {
+                  return child;
                 } else {
                   return Container();
                 }
@@ -780,7 +769,7 @@ class _BuildRoomScreenState extends State<BuildRoomScreen> {
                 onPressed: () {
                   setState(() {
                     if (!(listViewStartingIndex.value + 6 >=
-                        room.player.getElementCards().length)) {
+                        elementCards.length)) {
                       listViewStartingIndex.value += 6;
                     }
                   });
