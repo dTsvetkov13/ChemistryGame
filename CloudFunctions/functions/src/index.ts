@@ -24,6 +24,7 @@ import { listenersToRoomTurnData1 } from "./listeners-to-room-turn-data";
 import { completeReaction1 } from './complete-reaction';
 import { leaveRoom1 } from './leave-room';
 import { setAllPlayersAsReady1 } from './set-all-players-as-ready';
+import { completeReactionDemo1 } from './complete-reaction-demo';
 
 const serviceAccount = require("../chemistrygame-cd3a6-firebase-adminsdk-cd58r-855bee1b82");
 
@@ -63,6 +64,7 @@ export const setAllPlayersAsReady = setAllPlayersAsReady1;
 export const updateCurrToken = updateCurrToken1;
 export const updateUser = updateUser1;
 export const completeReaction = completeReaction1;
+export const completeReactionDemo = completeReactionDemo1
 export const leaveRoom = leaveRoom1;
 
 exports.listenersToRoomFreeSeats = listenersToRoomFreeSeats1;
