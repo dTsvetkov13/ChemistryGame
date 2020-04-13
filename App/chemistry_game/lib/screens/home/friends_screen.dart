@@ -83,7 +83,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   var friends = new ValueNotifier<List<Widget>>(null);
   var Result = new ValueNotifier([]);
-  bool thereAreNotInvitationsMsgShown = false;
 
   void showToast(var toastMsg){
     Fluttertoast.showToast(
@@ -111,8 +110,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       var result = await callGetAllInvitations.call(data);
       var invitations = result.data;
 
-      if(invitations.length <= 0 && !thereAreNotInvitationsMsgShown) {
-        thereAreNotInvitationsMsgShown = true;
+      if(invitations.length <= 0) {
         showToast("There are not invitations");
         return;
       }
